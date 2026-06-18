@@ -464,14 +464,26 @@ function getContract(withSigner=false) {
   return new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
 }
 
-// Convert on-chain stick tuple to our JS format
+// Convert on-chain stick tuple to our JS format (ethers v5 returns BigNumber for uint8!)
 function formatStick(s) {
-  return { color: PALETTE[s.color], length: s.length, x: s.x, y: s.y, dir: s.dir };
+  return {
+    color:  PALETTE[Number(s.color)] || PALETTE[0],
+    length: Number(s.length),
+    x:      Number(s.x),
+    y:      Number(s.y),
+    dir:    Number(s.dir)
+  };
 }
 // Convert JS stick back to on-chain tuple
 function toChainStick(s) {
   const colorIdx = PALETTE.indexOf(s.color);
-  return { color: colorIdx >= 0 ? colorIdx : 0, length: s.length, x: s.x, y: s.y, dir: s.dir };
+  return {
+    color:  colorIdx >= 0 ? colorIdx : 0,
+    length: Number(s.length),
+    x:      Number(s.x),
+    y:      Number(s.y),
+    dir:    Number(s.dir)
+  };
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -482,7 +494,17 @@ function makeNFT(n){return Array.from({length:n||3},makeStick);}
 function pp(ctx,x,y,c,sc){if(x<0||x>=GRID||y<0||y>=GRID)return;ctx.fillStyle=c;ctx.fillRect(x*sc,y*sc,sc,sc);}
 function drawNFT(ctx,sticks,scale){
   ctx.fillStyle='#fff';ctx.fillRect(0,0,GRID*scale,GRID*scale);
-  sticks.forEach(s=>{const h=Math.floor(s.length/2);for(let i=-h;i<=h;i++){if(s.dir===0)pp(ctx,s.x+i,s.y,s.color,scale);else if(s.dir===1)pp(ctx,s.x,s.y+i,s.color,scale);else if(s.dir===2)pp(ctx,s.x+i,s.y+i,s.color,scale);else pp(ctx,s.x+i,s.y-i,s.color,scale);}});
+  sticks.forEach(s=>{
+    const h=Math.floor(Number(s.length)/2);
+    const sx=Number(s.x),sy=Number(s.y),sd=Number(s.dir);
+    const col=typeof s.color==='string'?s.color:(PALETTE[Number(s.color)]||'#111');
+    for(let i=-h;i<=h;i++){
+      if(sd===0)pp(ctx,sx+i,sy,col,scale);
+      else if(sd===1)pp(ctx,sx,sy+i,col,scale);
+      else if(sd===2)pp(ctx,sx+i,sy+i,col,scale);
+      else pp(ctx,sx+i,sy-i,col,scale);
+    }
+  });
 }
 function makeThumb(sticks,size){const c=document.createElement('canvas');c.width=size;c.height=size;drawNFT(c.getContext('2d'),sticks,size/GRID);return c;}
 function toggleMobileNav(){document.getElementById('mobile-nav').classList.toggle('open');}
@@ -813,11 +835,13 @@ async function loadMyNFTs(){
     const contract=getContract();
     const provider=getProvider();
     const latest=await provider.getBlockNumber();
-    // Base Sepolia: ~2s blocks, look back ~7 days = ~302400 blocks, cap at 50000 to avoid 413
     const fromBlock=Math.max(0, latest-50000);
+    console.log('loadMyNFTs: scanning blocks',fromBlock,'to',latest,'for',walletAddress);
     const filter=contract.filters.Minted(walletAddress);
     const events=await contract.queryFilter(filter, fromBlock, latest);
+    console.log('loadMyNFTs: found',events.length,'Minted events');
     const ids=[...new Set(events.map(e=>e.args.tokenId.toNumber()))];
+    console.log('loadMyNFTs: token ids',ids);
     const owned=[];
     for(const tokenId of ids){
       try{
@@ -825,13 +849,15 @@ async function loadMyNFTs(){
         if(owner.toLowerCase()===walletAddress.toLowerCase()){
           const rawSticks=await contract.getSticks(tokenId);
           const credits=await contract.editCredits(tokenId);
+          console.log('Token',tokenId,'sticks:',rawSticks.length,'credits:',Number(credits));
           owned.push({id:tokenId,sticks:rawSticks.map(formatStick),credits:Number(credits)});
         }
-      }catch(e){}
+      }catch(e){console.warn('Token',tokenId,'error:',e);}
     }
     owned.sort((a,b)=>a.id-b.id);
     myNFTData=owned;
     myNFTsLoaded=true;
+    console.log('loadMyNFTs: loaded',owned.length,'NFTs');
   }catch(e){console.error('loadMyNFTs error:',e);}
 }
 
