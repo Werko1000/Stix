@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stix – On-chain pixel art</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --c1:#E63946; --c2:#F4A261; --c3:#E9C46A; --c4:#2A9D8F;
+  --c5:#264653; --c6:#A8DADC; --c7:#457B9D; --c8:#1D3557;
+  --c9:#F1FAEE; --c10:#C8B6FF; --c11:#FF6B6B; --c12:#FFE66D;
+  --c13:#6BCB77; --c14:#4D96FF; --c15:#FF6FC8; --c16:#111111;
+  --max: 860px;
+}
+html { scroll-behavior: smooth; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #fff; color: #111; }
+.wrap { max-width: var(--max); margin: 0 auto; padding: 0 20px; }
+nav { border-bottom: 0.5px solid #eee; background: #fff; position: sticky; top: 0; z-index: 100; }
+.nav-inner { max-width: var(--max); margin: 0 auto; padding: 0 20px; height: 56px; display: flex; align-items: center; justify-content: space-between; }
+.nav-logo { font-size: 20px; font-weight: 600; letter-spacing: -1px; cursor: pointer; }
+.logo-s{color:var(--c1)} .logo-t{color:var(--c2)} .logo-i{color:var(--c3)} .logo-x{color:var(--c4)} .logo-dot{color:var(--c10)}
+.nav-links { display: flex; gap: 20px; align-items: center; }
+.nav-links a { font-size: 13px; color: #666; text-decoration: none; cursor: pointer; transition: color 0.15s; }
+.nav-links a:hover { color: #111; }
+.nav-menu-btn { display: none; background: none; border: none; cursor: pointer; font-size: 22px; color: #111; padding: 4px; }
+.btn-wallet { font-size: 13px; font-weight: 500; padding: 7px 16px; border: 1.5px solid #111; border-radius: 6px; background: #fff; color: #111; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.btn-wallet:hover { background: #111; color: #fff; }
+.btn-wallet.connected { border-color: var(--c4); color: var(--c4); }
+.btn-wallet.connected:hover { background: var(--c4); color: #fff; }
+.wallet-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.mobile-nav { display: none; background: #fff; border-bottom: 0.5px solid #eee; padding: 10px 20px; flex-direction: column; gap: 2px; }
+.mobile-nav a { font-size: 15px; color: #555; padding: 10px 0; cursor: pointer; border-bottom: 0.5px solid #f5f5f5; }
+.mobile-nav.open { display: flex; }
+.page { display: none; }
+.page.active { display: block; }
+.hero { padding: 60px 0 48px; border-bottom: 0.5px solid #eee; }
+.hero-inner { max-width: var(--max); margin: 0 auto; padding: 0 20px; }
+.hero-eyebrow { font-size: 11px; letter-spacing: 2.5px; text-transform: uppercase; color: #999; margin-bottom: 20px; }
+.hero-title { font-size: clamp(34px, 7vw, 58px); font-weight: 600; letter-spacing: -2px; line-height: 1.03; color: #111; margin-bottom: 18px; }
+.hero-title em { font-style: normal; transition: color 0.6s; }
+.hero-sub { font-size: clamp(15px, 2vw, 17px); color: #555; line-height: 1.75; max-width: 500px; margin-bottom: 10px; }
+.hero-sub2 { font-size: 14px; color: #aaa; line-height: 1.7; max-width: 480px; margin-bottom: 36px; }
+.hero-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 44px; }
+.btn-primary { font-size: 14px; font-weight: 500; padding: 12px 26px; background: #111; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+.btn-primary:hover { background: #333; }
+.btn-outline { font-size: 14px; padding: 12px 26px; border: 0.5px solid #ccc; border-radius: 6px; background: #fff; color: #111; cursor: pointer; }
+.btn-outline:hover { background: #f5f5f5; }
+.hero-ticker { display: flex; gap: 8px; overflow: hidden; }
+.hero-ticker canvas { flex-shrink: 0; image-rendering: pixelated; border: 0.5px solid #eee; border-radius: 6px; }
+.stats-bar { border-bottom: 0.5px solid #eee; }
+.stats-inner { max-width: var(--max); margin: 0 auto; padding: 0 20px; display: grid; grid-template-columns: repeat(4, 1fr); }
+.stat { padding: 22px 0 22px; border-right: 0.5px solid #eee; padding-right: 24px; margin-right: 24px; }
+.stat:last-child { border-right: none; margin-right: 0; }
+.stat-val { font-size: 22px; font-weight: 600; }
+.stat-lbl { font-size: 11px; color: #999; margin-top: 3px; }
+.manifesto { border-bottom: 0.5px solid #eee; }
+.manifesto-inner { max-width: var(--max); margin: 0 auto; padding: 60px 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: start; }
+.manifesto h2 { font-size: clamp(22px, 4vw, 34px); font-weight: 600; letter-spacing: -1px; line-height: 1.15; margin-bottom: 20px; }
+.manifesto p { font-size: 15px; color: #555; line-height: 1.8; margin-bottom: 14px; }
+.manifesto p:last-child { margin-bottom: 0; }
+.manifesto-right { display: flex; flex-direction: column; gap: 14px; }
+.manifesto-fact { padding: 18px 20px; border: 0.5px solid #eee; border-radius: 10px; }
+.manifesto-fact .fact-label { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: #999; margin-bottom: 6px; }
+.manifesto-fact .fact-val { font-size: 16px; font-weight: 500; margin-bottom: 4px; }
+.manifesto-fact .fact-desc { font-size: 13px; color: #666; line-height: 1.55; }
+.how { border-bottom: 0.5px solid #eee; }
+.how-inner { max-width: var(--max); margin: 0 auto; padding: 52px 20px; }
+.section-label { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #999; margin-bottom: 28px; }
+.how-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.how-step { padding: 26px 22px; border: 0.5px solid #eee; border-radius: 10px; }
+.how-accent { display: inline-block; width: 22px; height: 22px; border-radius: 50%; margin-bottom: 14px; }
+.how-step-num { font-size: 11px; color: #bbb; margin-bottom: 10px; }
+.how-step h3 { font-size: 16px; font-weight: 500; margin-bottom: 8px; }
+.how-step p { font-size: 13px; color: #666; line-height: 1.65; }
+.section { border-bottom: 0.5px solid #eee; }
+.section-inner { max-width: var(--max); margin: 0 auto; padding: 40px 20px; }
+.gallery-filters { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+.filter-btn { font-size: 12px; padding: 5px 14px; border-radius: 20px; border: 0.5px solid #ddd; background: #fff; color: #666; cursor: pointer; transition: all 0.15s; }
+.filter-btn.active { border-color: #111; background: #111; color: #fff; }
+.nft-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.nft-card { border: 0.5px solid #eee; border-radius: 8px; overflow: hidden; cursor: pointer; transition: border-color 0.15s, transform 0.15s; }
+.nft-card:hover { border-color: #bbb; transform: translateY(-2px); }
+.nft-card canvas { display: block; width: 100%; image-rendering: pixelated; }
+.nft-card-info { padding: 7px 9px; }
+.nft-card-id { font-size: 11px; color: #999; }
+.nft-card-name { font-size: 11px; font-weight: 500; color: #111; margin-top: 1px; }
+.nft-card-price { font-size: 12px; font-weight: 500; }
+.mint-stage { display: grid; grid-template-columns: 300px 1fr; gap: 32px; align-items: start; }
+.mint-visual { position: relative; width: 300px; height: 300px; }
+.mint-visual canvas { display: block; image-rendering: pixelated; border: 0.5px solid #eee; border-radius: 12px; width: 300px; height: 300px; background: #fff; }
+.mint-spinner-overlay { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 16px; background: rgba(255,255,255,0.92); border-radius: 12px; }
+.mint-spinner-overlay.active { display: flex; }
+.mint-spinner-ring { width: 44px; height: 44px; border: 3px solid #eee; border-top-color: var(--c1); border-right-color: var(--c2); border-bottom-color: var(--c4); border-radius: 50%; animation: spin 0.9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.mint-spinner-text { font-size: 13px; color: #666; }
+.mint-info h3 { font-size: 20px; font-weight: 600; letter-spacing: -0.5px; margin-bottom: 10px; }
+.mint-desc { font-size: 14px; color: #666; line-height: 1.7; margin-bottom: 22px; }
+.mint-rows { margin-bottom: 22px; }
+.mint-row { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 0.5px solid #f5f5f5; font-size: 13px; }
+.mint-row .lbl { color: #666; }
+.mint-row .val { font-weight: 500; }
+.mint-cta { padding: 13px 26px; background: #111; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; }
+.mint-cta:hover { background: #333; }
+.mint-cta:disabled { background: #ccc; cursor: default; }
+
+.burn-select-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+.burn-col h4 { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.burn-col .burn-col-sub { font-size: 12px; color: #999; margin-bottom: 12px; }
+.burn-col.keep h4 { color: var(--c4); }
+.burn-col.burn h4 { color: var(--c1); }
+.burn-pick-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.burn-pick { border: 1.5px solid #eee; border-radius: 8px; overflow: hidden; cursor: pointer; transition: border-color 0.15s; position: relative; }
+.burn-pick canvas { display: block; width: 100%; image-rendering: pixelated; }
+.burn-pick .pick-label { padding: 5px 8px; font-size: 11px; color: #777; }
+.burn-pick.sel-keep { border-color: var(--c4); }
+.burn-pick.sel-burn { border-color: var(--c1); }
+.burn-pick.disabled { opacity: 0.35; cursor: not-allowed; }
+.burn-pick .pick-tag { position: absolute; top: 6px; right: 6px; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 10px; color: #fff; }
+.burn-pick.sel-keep .pick-tag { background: var(--c4); }
+.burn-pick.sel-burn .pick-tag { background: var(--c1); }
+.burn-confirm { border: 0.5px solid #eee; border-radius: 12px; padding: 20px; display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+.burn-preview-canvas { image-rendering: pixelated; border: 0.5px solid #eee; border-radius: 8px; }
+.burn-confirm-text { flex: 1; min-width: 180px; }
+.burn-confirm-text h4 { font-size: 15px; font-weight: 500; margin-bottom: 6px; }
+.burn-confirm-text p { font-size: 13px; color: #666; line-height: 1.6; margin-bottom: 14px; }
+.burn-go { padding: 11px 22px; background: var(--c1); color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; }
+.burn-go:hover { background: #c52f3c; }
+.burn-go:disabled { background: #e8b5ba; cursor: default; }
+.reveal-pop { animation: revealPop 0.5s cubic-bezier(0.2,0.8,0.2,1); }
+@keyframes revealPop { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+.stick-attrs { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 5px; }
+.attr-pill { font-size: 11px; padding: 2px 8px; background: #fff; border: 0.5px solid #eee; border-radius: 4px; color: #555; display: flex; align-items: center; gap: 4px; }
+.color-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.editor-wrap { display: grid; grid-template-columns: 1fr 220px; gap: 20px; }
+.editor-canvas-area { border: 0.5px solid #eee; border-radius: 10px; background: #fafafa; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; gap: 10px; }
+.editor-canvas-area canvas { image-rendering: pixelated; border: 0.5px solid #ddd; border-radius: 6px; max-width: 100%; }
+.editor-hint { font-size: 12px; color: #999; }
+.editor-side { display: flex; flex-direction: column; gap: 10px; }
+.editor-stick-card { border: 0.5px solid #eee; border-radius: 8px; padding: 10px 13px; cursor: pointer; }
+.editor-stick-card.active { border-width: 1.5px; }
+.stick-label { font-size: 10px; color: #999; letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 5px; }
+.save-btn { width: 100%; padding: 10px; background: #111; color: #fff; border: none; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; }
+.save-btn:hover { background: #333; }
+.save-btn.locked { background: #f0f0f0; color: #aaa; cursor: not-allowed; }
+.save-btn.locked:hover { background: #f0f0f0; }
+.edit-status { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; }
+.edit-status.has-credit { background: #edfaf5; border: 0.5px solid #b8e6d6; color: var(--c4); }
+.edit-status.no-credit { background: #fafafa; border: 0.5px solid #eee; color: #888; }
+.edit-status .credit-num { font-size: 18px; font-weight: 600; }
+.edit-status .credit-text { line-height: 1.4; }
+.edit-locked-overlay { font-size: 12px; color: #c0392b; margin-top: 4px; }
+.burn-card { border: 0.5px solid #fcc; border-radius: 8px; padding: 13px; background: #fff9f9; }
+.burn-card h4 { font-size: 11px; color: var(--c1); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+.burn-card p { font-size: 12px; color: #666; line-height: 1.5; margin-bottom: 10px; }
+.burn-btn { width: 100%; padding: 8px; border: 1px solid var(--c1); border-radius: 5px; background: #fff; color: var(--c1); font-size: 12px; font-weight: 500; cursor: pointer; }
+.burn-btn:hover { background: var(--c1); color: #fff; }
+.dir-btn { flex: 1; padding: 8px 0; border: 0.5px solid #ddd; border-radius: 5px; background: #fff; color: #555; font-size: 15px; cursor: pointer; transition: all 0.15s; }
+.dir-btn:hover { border-color: #999; }
+.dir-btn.active { border-color: #111; background: #111; color: #fff; }
+.mynft-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.mynft-card { border: 0.5px solid #eee; border-radius: 10px; overflow: hidden; cursor: pointer; transition: transform 0.15s; }
+.mynft-card:hover { transform: translateY(-2px); }
+.mynft-card canvas { display: block; width: 100%; image-rendering: pixelated; }
+.mynft-footer { padding: 11px 13px; display: flex; justify-content: space-between; align-items: center; }
+.mynft-info h4 { font-size: 13px; font-weight: 500; }
+.mynft-info span { font-size: 11px; color: #999; }
+.edit-btn { font-size: 11px; padding: 4px 10px; border: 0.5px solid #ddd; border-radius: 4px; background: #fff; color: #555; cursor: pointer; }
+.edit-btn:hover { border-color: #999; }
+.connect-prompt { text-align: center; padding: 72px 20px; }
+.connect-prompt h2 { font-size: 24px; font-weight: 500; margin-bottom: 10px; }
+.connect-prompt p { font-size: 15px; color: #666; margin-bottom: 28px; max-width: 360px; margin-left: auto; margin-right: auto; }
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(8px); background: #111; color: #fff; padding: 11px 20px; border-radius: 8px; font-size: 13px; opacity: 0; transition: all 0.25s; pointer-events: none; z-index: 999; white-space: nowrap; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+footer { border-top: 0.5px solid #eee; }
+.footer-inner { max-width: var(--max); margin: 0 auto; padding: 28px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+.footer-logo { font-size: 16px; font-weight: 600; letter-spacing: -0.5px; }
+.footer-links { display: flex; gap: 20px; }
+.footer-links a { font-size: 13px; color: #999; text-decoration: none; cursor: pointer; }
+.footer-links a:hover { color: #111; }
+.footer-note { font-size: 12px; color: #ccc; }
+@media(max-width:700px){
+  .nav-links { display: none; }
+  .nav-menu-btn { display: block; }
+  .stats-inner { grid-template-columns: repeat(2, 1fr); }
+  .manifesto-inner { grid-template-columns: 1fr; gap: 28px; }
+  .how-steps { grid-template-columns: 1fr; gap: 10px; }
+  .nft-grid { grid-template-columns: repeat(2, 1fr); }
+  .mint-stage { grid-template-columns: 1fr; }
+  .mint-visual { width: 100%; height: auto; aspect-ratio: 1; }
+  .mint-visual canvas { width: 100%; height: auto; }
+  .burn-select-grid { grid-template-columns: 1fr; }
+  .editor-wrap { grid-template-columns: 1fr; }
+  .mynft-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media(max-width:420px){
+  .nft-grid { grid-template-columns: repeat(1, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <div class="nav-logo" onclick="showPage('home')">
+      <span class="logo-s">s</span><span class="logo-t">t</span><span class="logo-i">i</span><span class="logo-x">x</span><span class="logo-dot">.</span>
+    </div>
+    <div class="nav-links">
+      <a onclick="showPage('home')">home</a>
+      <a onclick="showPage('mint')">mint</a>
+      <a onclick="showPage('gallery')">gallery</a>
+      <a onclick="showPage('mynfts')">my nfts</a>
+      <a onclick="showPage('burn')">burn</a>
+      <a onclick="showPage('editor')">editor</a>
+      <button class="btn-wallet" id="wallet-btn" onclick="handleWalletClick()">
+        <span class="wallet-dot"></span>
+        <span id="wallet-label">Connect wallet</span>
+      </button>
+    </div>
+    <button class="nav-menu-btn" onclick="toggleMobileNav()" aria-label="Menu">&#9776;</button>
+  </div>
+  <div class="mobile-nav" id="mobile-nav">
+    <a onclick="showPage('home');toggleMobileNav()">home</a>
+    <a onclick="showPage('mint');toggleMobileNav()">mint</a>
+    <a onclick="showPage('gallery');toggleMobileNav()">gallery</a>
+    <a onclick="showPage('mynfts');toggleMobileNav()">my nfts</a>
+    <a onclick="showPage('burn');toggleMobileNav()">burn</a>
+    <a onclick="showPage('editor');toggleMobileNav()">editor</a>
+    <a onclick="handleWalletClick();toggleMobileNav()" id="mobile-wallet-link">Connect wallet</a>
+  </div>
+</nav>
+
+<div id="page-home" class="page active">
+  <div class="hero">
+    <div class="hero-inner">
+      <div class="hero-eyebrow">On-chain generative art &middot; Base</div>
+      <div class="hero-title">Three sticks.<br>Infinite <em id="hero-word" style="color:var(--c1)">possibility.</em></div>
+      <div class="hero-sub">Each Stix is a 50&times;50 pixel canvas carrying three hand-placed lines &mdash; stored entirely on Base, rendered from the contract, owned by you.</div>
+      <div class="hero-sub2">No servers. No IPFS. No off-chain dependencies. If the blockchain exists, your Stix exists.</div>
+      <div class="hero-actions">
+        <button class="btn-primary" onclick="showPage('mint')">Mint a Stix</button>
+        <button class="btn-outline" onclick="showPage('gallery')">Browse collection</button>
+      </div>
+      <div class="hero-ticker" id="hero-ticker"></div>
+    </div>
+  </div>
+  <div class="stats-bar">
+    <div class="stats-inner">
+      <div class="stat"><div class="stat-val" style="color:var(--c1)">10,000</div><div class="stat-lbl">Total supply</div></div>
+      <div class="stat"><div class="stat-val" style="color:var(--c4)">TBD</div><div class="stat-lbl">Mint price</div></div>
+      <div class="stat"><div class="stat-val" style="color:var(--c2)">50&times;50</div><div class="stat-lbl">Pixel canvas</div></div>
+      <div class="stat"><div class="stat-val" style="color:var(--c10)">100%</div><div class="stat-lbl">On-chain</div></div>
+    </div>
+  </div>
+  <div class="manifesto">
+    <div class="manifesto-inner">
+      <div>
+        <h2>Art that lives<br>on the chain.</h2>
+        <p>Most NFT projects store their images on IPFS or a centralized server. If the team disappears, the art disappears. Stix is different.</p>
+        <p>Every pixel, every color, every stick position is encoded directly into the smart contract on Base. The SVG is generated on-chain, on demand, every time. There is no image to host. There is nothing to lose.</p>
+        <p>When you burn two Stix together, you get all six sticks in one canvas &mdash; yours to arrange however you like. Keep burning, keep building. The chain remembers everything.</p>
+      </div>
+      <div class="manifesto-right">
+        <div class="manifesto-fact">
+          <div class="fact-label">Storage</div>
+          <div class="fact-val">On-chain SVG</div>
+          <div class="fact-desc">Pixel data packed directly into the contract. No IPFS. No external URLs.</div>
+        </div>
+        <div class="manifesto-fact">
+          <div class="fact-label">Licence</div>
+          <div class="fact-val">CC0 &mdash; public domain</div>
+          <div class="fact-desc">The art, the contracts, the code &mdash; all belong to everyone. Build on Stix freely.</div>
+        </div>
+        <div class="manifesto-fact">
+          <div class="fact-label">Blockchain</div>
+          <div class="fact-val">Base Mainnet</div>
+          <div class="fact-desc">Fast, cheap, and backed by Coinbase. Low gas means burning and editing stays accessible.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="how">
+    <div class="how-inner">
+      <div class="section-label">How it works</div>
+      <div class="how-steps">
+        <div class="how-step">
+          <div class="how-accent" style="background:#fff0f0; border:2px solid var(--c1);"></div>
+          <div class="how-step-num">01 &mdash; Mint</div>
+          <h3>You get three sticks.</h3>
+          <p>Each Stix is minted with three randomly generated pixel lines &mdash; a color from the 16-color palette, a length between 5 and 15 pixels, and one of four directions.</p>
+        </div>
+        <div class="how-step">
+          <div class="how-accent" style="background:#fff8ee; border:2px solid var(--c2);"></div>
+          <div class="how-step-num">02 &mdash; Burn</div>
+          <h3>Burn two, get one.</h3>
+          <p>Sacrifice two Stix and receive a single new one carrying all six sticks. Burn again. Stack more. The more you burn, the richer your canvas becomes.</p>
+        </div>
+        <div class="how-step">
+          <div class="how-accent" style="background:#edfaf5; border:2px solid var(--c4);"></div>
+          <div class="how-step-num">03 &mdash; Create</div>
+          <h3>Arrange. Commit. Own.</h3>
+          <p>Use the on-chain editor to place every stick exactly where you want it. Save the arrangement to the contract. That&rsquo;s your art, permanently.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-inner">
+      <div class="section-label">What you can build</div>
+      <p style="font-size:14px;color:#666;line-height:1.7;margin-bottom:24px;max-width:480px;">Burn enough Stix and the sticks start to add up. Here's what collectors have composed on a single 50×50 canvas.</p>
+      <div class="nft-grid" id="home-gallery"></div>
+    </div>
+  </div>
+</div>
+
+<div id="page-gallery" class="page">
+  <div class="section">
+    <div class="section-inner">
+      <div class="section-label">Gallery</div>
+      <div class="gallery-filters">
+        <button class="filter-btn active" onclick="filterGallery(this,'all')">All</button>
+        <button class="filter-btn" onclick="filterGallery(this,'art')">Artworks</button>
+        <button class="filter-btn" onclick="filterGallery(this,'3')">3 sticks</button>
+        <button class="filter-btn" onclick="filterGallery(this,'6')">6 sticks</button>
+        <button class="filter-btn" onclick="filterGallery(this,'9')">9+ sticks</button>
+      </div>
+      <div class="nft-grid" id="gallery-grid"></div>
+    </div>
+  </div>
+</div>
+
+<div id="page-mint" class="page">
+  <div class="section">
+    <div class="section-inner">
+      <div class="section-label">Mint a Stix</div>
+      <div class="mint-stage">
+        <div class="mint-visual">
+          <canvas id="mint-canvas" width="300" height="300"></canvas>
+          <div class="mint-spinner-overlay" id="mint-spinner">
+            <div class="mint-spinner-ring"></div>
+            <div class="mint-spinner-text" id="mint-spinner-text">Requesting randomness…</div>
+          </div>
+        </div>
+        <div class="mint-info">
+          <div id="mint-state-idle">
+            <h3>Mint is a surprise.</h3>
+            <p class="mint-desc">You can't pick your sticks. Each Stix gets three lines generated from on-chain Chainlink randomness at the moment you mint — unmanipulable, unknowable in advance, revealed right here once it lands.</p>
+            <div class="mint-rows">
+              <div class="mint-row"><span class="lbl">Sticks</span><span class="val">3 (random)</span></div>
+              <div class="mint-row"><span class="lbl">Canvas</span><span class="val">50 &times; 50 px</span></div>
+              <div class="mint-row"><span class="lbl">Storage</span><span class="val">100% on-chain</span></div>
+              <div class="mint-row"><span class="lbl">Network</span><span class="val">Base</span></div>
+              <div class="mint-row" style="border:none"><span class="lbl">Price</span><span class="val">TBD</span></div>
+            </div>
+            <button class="mint-cta" id="mint-cta" onclick="handleMint()">Mint a Stix</button>
+          </div>
+          <div id="mint-state-revealed" style="display:none;">
+            <h3 id="reveal-title">Meet Stix #—</h3>
+            <p class="mint-desc">Minted and stored on-chain. Here are your three sticks — burn another Stix later to start combining.</p>
+            <div id="reveal-stick-list"></div>
+            <div style="display:flex; gap:8px; margin-top:8px;">
+              <button class="mint-cta" style="flex:1;" onclick="showPage('mynfts')">View in My NFTs</button>
+              <button class="btn-outline" onclick="resetMint()">Mint another</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="page-mynfts" class="page">
+  <div class="section">
+    <div class="section-inner">
+      <div class="section-label">My collection</div>
+      <div id="mynft-content"></div>
+    </div>
+  </div>
+</div>
+
+<div id="page-burn" class="page">
+  <div class="section">
+    <div class="section-inner">
+      <div class="section-label">Burn &amp; merge</div>
+      <p style="font-size:14px;color:#666;line-height:1.7;margin-bottom:24px;max-width:520px;">Pick the Stix you want to <b>keep</b> and the one you want to <b>burn</b>. The burned Stix's sticks move into the keeper, and the keeper unlocks one edit. The burned token is gone forever.</p>
+      <div id="burn-content"></div>
+    </div>
+  </div>
+</div>
+
+<div id="page-editor" class="page">
+  <div class="section">
+    <div class="section-inner">
+      <div class="section-label" id="editor-title-label">Editor</div>
+      <div id="edit-status"></div>
+      <div class="editor-wrap">
+        <div class="editor-canvas-area">
+          <canvas id="editor-canvas" width="300" height="300"></canvas>
+          <div class="editor-hint" id="editor-hint">Drag a stick to move it · tap to select</div>
+        </div>
+        <div class="editor-side">
+          <div class="section-label">Sticks</div>
+          <div id="editor-stick-list"></div>
+          <div id="editor-controls"></div>
+          <button class="save-btn" id="save-btn" onclick="handleSave()">Save layout on-chain</button>
+          <div class="burn-card">
+            <h4>Burn &amp; merge</h4>
+            <p>Burn another Stix to absorb its 3 sticks &mdash; and unlock one new edit.</p>
+            <button class="burn-btn" onclick="showPage('burn')">Go to Burn &amp; merge</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-logo"><span class="logo-s">s</span><span class="logo-t">t</span><span class="logo-i">i</span><span class="logo-x">x</span><span class="logo-dot">.</span></div>
+    <div class="footer-links">
+      <a>OpenSea</a><a>BaseScan</a><a>Twitter</a><a>Discord</a>
+    </div>
+    <div class="footer-note">CC0 &middot; 100% on-chain &middot; Base</div>
+  </div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+<script>
+const PALETTE=["#E63946","#F4A261","#E9C46A","#2A9D8F","#264653","#A8DADC","#457B9D","#1D3557","#F1FAEE","#C8B6FF","#FF6B6B","#FFE66D","#6BCB77","#4D96FF","#FF6FC8","#111111"];
+const DIR_NAMES=["--","|","↘","↗"];
+const GRID=50;
+let walletAddress=null;
+function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+function makeStick(){return{color:PALETTE[rand(0,15)],length:rand(5,15),x:rand(8,42),y:rand(8,42),dir:rand(0,3)};}
+function makeNFT(n){return Array.from({length:n||3},makeStick);}
+function pp(ctx,x,y,c,sc){if(x<0||x>=GRID||y<0||y>=GRID)return;ctx.fillStyle=c;ctx.fillRect(x*sc,y*sc,sc,sc);}
+function drawNFT(ctx,sticks,scale){
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,GRID*scale,GRID*scale);
+  sticks.forEach(s=>{const h=Math.floor(s.length/2);for(let i=-h;i<=h;i++){if(s.dir===0)pp(ctx,s.x+i,s.y,s.color,scale);else if(s.dir===1)pp(ctx,s.x,s.y+i,s.color,scale);else if(s.dir===2)pp(ctx,s.x+i,s.y+i,s.color,scale);else pp(ctx,s.x+i,s.y-i,s.color,scale);}});
+}
+function makeThumb(sticks,size){const c=document.createElement('canvas');c.width=size;c.height=size;drawNFT(c.getContext('2d'),sticks,size/GRID);return c;}
+function toggleMobileNav(){document.getElementById('mobile-nav').classList.toggle('open');}
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  window.scrollTo(0,0);
+  if(id==='gallery')buildGallery();
+  if(id==='mynfts')buildMyNFTs();
+  if(id==='editor')buildEditor();
+  if(id==='mint')resetMint();
+  if(id==='burn')buildBurn();
+}
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2800);}
+let detectedProvider=null;
+const eip6963Providers=[];
+window.addEventListener('eip6963:announceProvider',(e)=>{
+  if(e.detail&&e.detail.provider)eip6963Providers.push(e.detail);
+});
+try{window.dispatchEvent(new Event('eip6963:requestProvider'));}catch(e){}
+
+function getEthereum(){
+  if(detectedProvider)return detectedProvider;
+  if(eip6963Providers.length>0){
+    const mm=eip6963Providers.find(p=>p.info&&/metamask/i.test(p.info.name));
+    detectedProvider=(mm||eip6963Providers[0]).provider;
+    return detectedProvider;
+  }
+  if(typeof window.ethereum!=='undefined'){
+    if(window.ethereum.providers&&window.ethereum.providers.length){
+      const mm=window.ethereum.providers.find(p=>p.isMetaMask);
+      detectedProvider=mm||window.ethereum.providers[0];
+    }else{
+      detectedProvider=window.ethereum;
+    }
+    return detectedProvider;
+  }
+  return null;
+}
+
+async function handleWalletClick(){
+  if(walletAddress){toast(walletAddress.slice(0,6)+'...'+walletAddress.slice(-4)+' · Base');return;}
+  let eth=getEthereum();
+  if(!eth){
+    await new Promise(r=>setTimeout(r,400));
+    try{window.dispatchEvent(new Event('eip6963:requestProvider'));}catch(e){}
+    eth=getEthereum();
+  }
+  if(!eth){toast('No Web3 wallet detected. Open in a browser with MetaMask enabled.');return;}
+  try{
+    const accounts=await eth.request({method:'eth_requestAccounts'});
+    if(accounts.length>0){
+      walletAddress=accounts[0];
+      const chainId=await eth.request({method:'eth_chainId'});
+      if(chainId!=='0x2105'){
+        try{await eth.request({method:'wallet_switchEthereumChain',params:[{chainId:'0x2105'}]});}
+        catch(e){
+          try{await eth.request({method:'wallet_addEthereumChain',params:[{chainId:'0x2105',chainName:'Base',nativeCurrency:{name:'ETH',symbol:'ETH',decimals:18},rpcUrls:['https://mainnet.base.org'],blockExplorerUrls:['https://basescan.org']}]});}catch(e2){}
+        }
+      }
+      updateWalletUI();
+      toast('Connected · '+walletAddress.slice(0,6)+'...'+walletAddress.slice(-4));
+      eth.on&&eth.on('accountsChanged',a=>{walletAddress=a[0]||null;updateWalletUI();});
+    }
+  }catch(e){
+    if(e&&e.code===4001)toast('Connection cancelled');
+    else toast('Could not connect: '+((e&&e.message)||'unknown error'));
+  }
+}
+function updateWalletUI(){
+  const btn=document.getElementById('wallet-btn');
+  const lbl=document.getElementById('wallet-label');
+  const mob=document.getElementById('mobile-wallet-link');
+  if(walletAddress){btn.classList.add('connected');const s=walletAddress.slice(0,6)+'...'+walletAddress.slice(-4);lbl.textContent=s;if(mob)mob.textContent=s;}
+  else{btn.classList.remove('connected');lbl.textContent='Connect wallet';if(mob)mob.textContent='Connect wallet';}
+}
+let revealTimer=null;
+function resetMint(){
+  if(revealTimer){clearTimeout(revealTimer);revealTimer=null;}
+  document.getElementById('mint-state-idle').style.display='';
+  document.getElementById('mint-state-revealed').style.display='none';
+  document.getElementById('mint-spinner').classList.remove('active');
+  const cta=document.getElementById('mint-cta');
+  if(cta){cta.disabled=false;cta.textContent='Mint a Stix';}
+  const cv=document.getElementById('mint-canvas');
+  if(cv){const ctx=cv.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,cv.width,cv.height);}
+}
+
+function handleMint(){
+  if(!walletAddress){toast('Connect your wallet first');return;}
+  const cta=document.getElementById('mint-cta');
+  cta.disabled=true;cta.textContent='Minting…';
+  const spinner=document.getElementById('mint-spinner');
+  const stext=document.getElementById('mint-spinner-text');
+  spinner.classList.add('active');
+  // Simulate the VRF request -> fulfill timeline with status messages.
+  const steps=['Requesting randomness…','Waiting for Chainlink VRF…','Randomness received…','Writing sticks on-chain…'];
+  let si=0; stext.textContent=steps[0];
+  const stepTimer=setInterval(()=>{si++;if(si<steps.length)stext.textContent=steps[si];},900);
+  revealTimer=setTimeout(()=>{
+    clearInterval(stepTimer);
+    spinner.classList.remove('active');
+    revealMint();
+  },3800);
+}
+
+function revealMint(){
+  // Generate the freshly "minted" NFT (in production: read it back from the contract by tokenId).
+  const newId=nextMintId++;
+  const sticks=makeNFT(3);
+  const nft={id:newId,sticks:sticks};
+  myNFTData.unshift(nft);
+
+  const cv=document.getElementById('mint-canvas');
+  drawNFT(cv.getContext('2d'),sticks,cv.width/GRID);
+  cv.classList.remove('reveal-pop');void cv.offsetWidth;cv.classList.add('reveal-pop');
+
+  document.getElementById('mint-state-idle').style.display='none';
+  const rev=document.getElementById('mint-state-revealed');
+  rev.style.display='';
+  document.getElementById('reveal-title').textContent='Meet Stix #'+newId;
+  const list=document.getElementById('reveal-stick-list');
+  list.innerHTML='';
+  const acc=['#E63946','#2A9D8F','#C8B6FF'];
+  sticks.forEach((s,i)=>{
+    const d=document.createElement('div');
+    d.style.cssText='border-left:3px solid '+acc[i]+';padding:9px 13px;margin-bottom:8px;background:#fafafa;border-radius:0 6px 6px 0;';
+    d.innerHTML='<div style="font-size:11px;color:#999;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Stick '+(i+1)+'</div><div class="stick-attrs"><span class="attr-pill"><span class="color-dot" style="background:'+s.color+'"></span>'+s.color+'</span><span class="attr-pill">'+s.length+'px</span><span class="attr-pill">'+DIR_NAMES[s.dir]+'</span></div>';
+    list.appendChild(d);
+  });
+  toast('Minted · Stix #'+newId);
+}
+function handleSave(){
+  if(!walletAddress){toast('Connect your wallet first');return;}
+  if(editCredits<=0){toast('No edit credits. Burn a Stix first.');return;}
+  if(!layoutDirty){toast('Move at least one stick before saving');return;}
+  editCredits--;
+  layoutDirty=false;
+  // persist back to the collection
+  const nft=myNFTData.find(x=>x.id===editorTokenId);
+  if(nft){nft.sticks=editorSticks.map(s=>({color:s.color,length:s.length,x:s.x,y:s.y,dir:s.dir}));nft.credits=editCredits;}
+  buildEditor();
+  toast('Layout saved on-chain · 1 credit used');
+}
+function handleBurn(){
+  // Burning is done on the dedicated Burn page where you pick keep + burn.
+  showPage('burn');
+}
+function buildHero(){
+  const wrap=document.getElementById('hero-ticker');if(!wrap)return;wrap.innerHTML='';
+  for(let i=0;i<10;i++){const c=makeThumb(makeNFT(rand(1,3)*3),56);c.style.cssText='width:56px;height:56px;image-rendering:pixelated;border:0.5px solid #eee;border-radius:6px;flex-shrink:0;';wrap.appendChild(c);}
+  const words=[{t:'possibility.',c:'#E63946'},{t:'yours.',c:'#2A9D8F'},{t:'art.',c:'#C8B6FF'},{t:'history.',c:'#F4A261'}];
+  let wi=0;
+  setInterval(()=>{wi=(wi+1)%words.length;const el=document.getElementById('hero-word');if(el){el.textContent=words[wi].t;el.style.color=words[wi].c;}},2400);
+}
+const homeGalleryData=Array.from({length:10},(_,i)=>({id:i+1,sticks:makeNFT(rand(1,3)*3),price:'0.0'+rand(1,9)}));
+function buildHomeGallery(){
+  const grid=document.getElementById('home-gallery');if(!grid)return;grid.innerHTML='';
+  const showcase=ARTWORKS.slice(0,6);
+  showcase.forEach((a,i)=>{const card=document.createElement('div');card.className='nft-card';const c=makeThumb(a.sticks,200);c.style.cssText='width:100%;image-rendering:pixelated;display:block;';const info=document.createElement('div');info.className='nft-card-info';info.innerHTML='<div class="nft-card-id">#'+String(i+1).padStart(4,'0')+'</div><div class="nft-card-name">'+a.name+' · '+a.sticks.length+' sticks</div>';card.appendChild(c);card.appendChild(info);grid.appendChild(card);});
+}
+
+function St(color,length,x,y,dir){return {color,length,x,y,dir};}
+const ARTWORKS=[
+  {name:'Heart', sticks:[St('#E63946',5,20,20,0),St('#E63946',5,30,20,0),St('#FF6B6B',3,18,21,1),St('#FF6B6B',3,32,21,1),St('#FF6B6B',3,23,21,1),St('#FF6B6B',3,27,21,1),St('#E63946',9,21,25,2),St('#E63946',9,29,25,3)]},
+  {name:'Diamond', sticks:[St('#4D96FF',9,21,21,2),St('#4D96FF',9,29,21,3),St('#378ADD',9,29,29,2),St('#378ADD',9,21,29,3)]},
+  {name:'House', sticks:[St('#F4A261',13,25,30,0),St('#F4A261',13,25,22,0),St('#F4A261',9,19,26,1),St('#F4A261',9,31,26,1),St('#E63946',9,21,18,2),St('#E63946',9,29,18,3),St('#2A9D8F',5,25,28,1)]},
+  {name:'Star', sticks:[St('#FFE66D',13,25,25,0),St('#FFE66D',13,25,25,1),St('#E9C46A',11,25,25,2),St('#E9C46A',11,25,25,3)]},
+  {name:'Smiley', sticks:[St('#111111',3,21,22,1),St('#111111',3,29,22,1),St('#E63946',5,25,31,0),St('#E63946',4,22,29,2),St('#E63946',4,28,29,3)]},
+  {name:'Arrow', sticks:[St('#2A9D8F',15,25,25,3),St('#2A9D8F',7,29,18,0),St('#2A9D8F',7,31,20,1)]},
+  {name:'Flower', sticks:[St('#6BCB77',9,25,32,1),St('#FF6FC8',5,25,22,0),St('#FF6FC8',5,25,22,1),St('#FF6FC8',5,25,22,2),St('#FF6FC8',5,25,22,3),St('#FFE66D',3,25,22,0)]},
+  {name:'Cross', sticks:[St('#E63946',13,25,25,1),St('#E63946',9,25,25,0)]},
+  {name:'Check', sticks:[St('#2A9D8F',5,20,26,2),St('#2A9D8F',11,28,22,3)]},
+];
+
+let galleryData=[];
+function buildGallery(){
+  if(galleryData.length===0){
+    let id=1;
+    ARTWORKS.forEach(a=>{ galleryData.push({id:id++, sticks:a.sticks, name:a.name, art:true}); });
+    for(let i=0;i<22;i++) galleryData.push({id:id++, sticks:makeNFT(rand(1,4)*3), art:false});
+  }
+  renderGallery(currentFilter==='art'?galleryData.filter(d=>d.art):galleryData);
+}
+function renderGallery(data){
+  const grid=document.getElementById('gallery-grid');grid.innerHTML='';
+  data.forEach(item=>{
+    const card=document.createElement('div');card.className='nft-card';
+    const c=makeThumb(item.sticks,200);c.style.cssText='width:100%;image-rendering:pixelated;display:block;';
+    const info=document.createElement('div');info.className='nft-card-info';
+    if(item.art){
+      info.innerHTML='<div class="nft-card-id">#'+String(item.id).padStart(4,'0')+'</div><div class="nft-card-name">'+item.name+' · '+item.sticks.length+' sticks</div>';
+    }else{
+      info.innerHTML='<div class="nft-card-id">#'+String(item.id).padStart(4,'0')+'</div>';
+    }
+    card.appendChild(c);card.appendChild(info);grid.appendChild(card);
+  });
+}
+let currentFilter='all';
+function filterGallery(btn,f){
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');
+  currentFilter=f;
+  buildGallery();
+  let d=galleryData;
+  if(f==='art')d=galleryData.filter(x=>x.art);
+  else if(f==='3')d=galleryData.filter(x=>!x.art&&x.sticks.length===3);
+  else if(f==='6')d=galleryData.filter(x=>!x.art&&x.sticks.length===6);
+  else if(f==='9')d=galleryData.filter(x=>!x.art&&x.sticks.length>=9);
+  renderGallery(d);
+}
+let myNFTData=[{id:42,sticks:makeNFT(3),credits:0},{id:17,sticks:makeNFT(6),credits:1},{id:88,sticks:makeNFT(9),credits:0}];
+let nextMintId=101;
+
+function buildMyNFTs(){
+  const wrap=document.getElementById('mynft-content');
+  if(!walletAddress){wrap.innerHTML='<div class="connect-prompt"><h2>Your collection awaits.</h2><p>Connect your wallet to see the Stix you own and start building your canvas.</p><button class="btn-primary" onclick="handleWalletClick()">Connect wallet</button></div>';return;}
+  if(myNFTData.length===0){wrap.innerHTML='<div class="connect-prompt"><h2>No Stix yet.</h2><p>Mint your first Stix to start your collection.</p><button class="btn-primary" onclick="showPage(\'mint\')">Mint a Stix</button></div>';return;}
+  wrap.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;"><p style="font-size:13px;color:#666;">'+myNFTData.length+' Stix in your wallet</p><button class="btn-outline" style="font-size:13px;padding:8px 18px;" onclick="showPage(\'burn\')">Burn &amp; merge →</button></div><div class="mynft-grid" id="mynft-grid"></div>';
+  const grid=document.getElementById('mynft-grid');const acc=["#E63946","#2A9D8F","#C8B6FF","#F4A261"];
+  myNFTData.forEach((item,i)=>{
+    const card=document.createElement('div');card.className='mynft-card';card.style.borderTop='3px solid '+acc[i%acc.length];
+    const c=makeThumb(item.sticks,180);c.style.cssText='width:100%;image-rendering:pixelated;display:block;';
+    const footer=document.createElement('div');footer.className='mynft-footer';
+    const creditBadge=item.credits>0?'<span style="font-size:10px;color:var(--c4);">'+item.credits+' edit'+(item.credits>1?'s':'')+'</span>':'<span>'+item.sticks.length+' sticks</span>';
+    footer.innerHTML='<div class="mynft-info"><h4>Stix #'+item.id+'</h4>'+creditBadge+'</div><button class="edit-btn" onclick="openEditor('+item.id+')">edit</button>';
+    card.appendChild(c);card.appendChild(footer);grid.appendChild(card);
+  });
+}
+
+// ---- Burn & merge selection flow ----
+let burnKeepId=null, burnBurnId=null;
+function buildBurn(){
+  const wrap=document.getElementById('burn-content');
+  if(!walletAddress){wrap.innerHTML='<div class="connect-prompt"><h2>Connect to burn.</h2><p>Connect your wallet to choose which Stix to keep and which to burn.</p><button class="btn-primary" onclick="handleWalletClick()">Connect wallet</button></div>';return;}
+  if(myNFTData.length<2){wrap.innerHTML='<div class="connect-prompt"><h2>You need at least two Stix.</h2><p>Burning merges one Stix into another, so you need two or more. Mint a few first.</p><button class="btn-primary" onclick="showPage(\'mint\')">Mint a Stix</button></div>';return;}
+  wrap.innerHTML=
+    '<div class="burn-select-grid">'+
+      '<div class="burn-col keep"><h4>Keep this one</h4><div class="burn-col-sub">Gains the sticks + 1 edit</div><div class="burn-pick-grid" id="keep-grid"></div></div>'+
+      '<div class="burn-col burn"><h4>Burn this one</h4><div class="burn-col-sub">Gone forever, sticks move over</div><div class="burn-pick-grid" id="burn-grid"></div></div>'+
+    '</div>'+
+    '<div id="burn-confirm-area"></div>';
+  renderBurnPicks();
+}
+
+function renderBurnPicks(){
+  const keepGrid=document.getElementById('keep-grid');
+  const burnGrid=document.getElementById('burn-grid');
+  keepGrid.innerHTML='';burnGrid.innerHTML='';
+  myNFTData.forEach(item=>{
+    keepGrid.appendChild(makeBurnPick(item,'keep'));
+    burnGrid.appendChild(makeBurnPick(item,'burn'));
+  });
+  renderBurnConfirm();
+}
+
+function makeBurnPick(item,role){
+  const div=document.createElement('div');
+  div.className='burn-pick';
+  const isKeep=role==='keep'&&burnKeepId===item.id;
+  const isBurn=role==='burn'&&burnBurnId===item.id;
+  if(isKeep)div.classList.add('sel-keep');
+  if(isBurn)div.classList.add('sel-burn');
+  // disable the same token in the opposite column
+  const disabled=(role==='keep'&&burnBurnId===item.id)||(role==='burn'&&burnKeepId===item.id);
+  if(disabled)div.classList.add('disabled');
+  const c=makeThumb(item.sticks,140);c.style.cssText='width:100%;image-rendering:pixelated;display:block;';
+  div.appendChild(c);
+  const lbl=document.createElement('div');lbl.className='pick-label';lbl.textContent='#'+item.id+' · '+item.sticks.length+' sticks';
+  div.appendChild(lbl);
+  if(isKeep||isBurn){const tag=document.createElement('div');tag.className='pick-tag';tag.textContent=isKeep?'KEEP':'BURN';div.appendChild(tag);}
+  if(!disabled){
+    div.onclick=()=>{
+      if(role==='keep')burnKeepId=(burnKeepId===item.id?null:item.id);
+      else burnBurnId=(burnBurnId===item.id?null:item.id);
+      renderBurnPicks();
+    };
+  }
+  return div;
+}
+
+function renderBurnConfirm(){
+  const area=document.getElementById('burn-confirm-area');
+  if(!area)return;
+  if(burnKeepId===null||burnBurnId===null){area.innerHTML='';return;}
+  const keep=myNFTData.find(x=>x.id===burnKeepId);
+  const burn=myNFTData.find(x=>x.id===burnBurnId);
+  const merged=keep.sticks.concat(burn.sticks);
+  area.innerHTML='<div class="burn-confirm"><canvas class="burn-preview-canvas" id="burn-preview" width="150" height="150"></canvas><div class="burn-confirm-text"><h4>Stix #'+keep.id+' will hold '+merged.length+' sticks</h4><p>Burning #'+burn.id+' moves its '+burn.sticks.length+' sticks into #'+keep.id+' and unlocks one edit. #'+burn.id+' is destroyed permanently.</p><button class="burn-go" onclick="confirmBurn()">Burn #'+burn.id+' → keep #'+keep.id+'</button></div></div>';
+  const cv=document.getElementById('burn-preview');
+  drawNFT(cv.getContext('2d'),merged,150/GRID);
+}
+
+function confirmBurn(){
+  const keep=myNFTData.find(x=>x.id===burnKeepId);
+  const burn=myNFTData.find(x=>x.id===burnBurnId);
+  keep.sticks=keep.sticks.concat(burn.sticks);
+  keep.credits=(keep.credits||0)+1;
+  myNFTData=myNFTData.filter(x=>x.id!==burnBurnId);
+  const keptId=keep.id;
+  burnKeepId=null;burnBurnId=null;
+  toast('Burned #'+burn.id+' · #'+keptId+' now has '+keep.sticks.length+' sticks + 1 edit');
+  buildBurn();
+}
+let editorSticks=makeNFT(3);let selectedIdx=0;
+const EDITOR_SCALE=6;
+let editorCanvasReady=false;
+let editCredits=0;
+let layoutDirty=false;
+let editorTokenId=42;
+
+function openEditor(id){
+  const nft=myNFTData.find(x=>x.id===id);
+  if(!nft){showPage('editor');return;}
+  editorTokenId=id;
+  editorSticks=nft.sticks.map(s=>({color:s.color,length:s.length,x:s.x,y:s.y,dir:s.dir}));
+  editCredits=nft.credits||0;
+  selectedIdx=0;
+  layoutDirty=false;
+  const lbl=document.getElementById('editor-title-label');
+  showPage('editor');
+}
+
+function renderEditStatus(){
+  const el=document.getElementById('edit-status');
+  if(!el)return;
+  if(editCredits>0){
+    el.className='edit-status has-credit';
+    el.innerHTML='<span class="credit-num">'+editCredits+'</span><span class="credit-text"><b>edit '+(editCredits===1?'credit':'credits')+' available.</b> Rearrange your sticks, then save once. Saving uses one credit.</span>';
+  }else{
+    el.className='edit-status no-credit';
+    el.innerHTML='<span class="credit-num">0</span><span class="credit-text">No edit credits. This layout is locked. Burn another Stix to unlock one edit.</span>';
+  }
+}
+
+function updateSaveButton(){
+  const btn=document.getElementById('save-btn');
+  if(!btn)return;
+  if(editCredits>0){
+    btn.classList.remove('locked');
+    btn.textContent=layoutDirty?'Save layout · uses 1 credit':'Save layout on-chain';
+  }else{
+    btn.classList.add('locked');
+    btn.textContent='Locked — burn to edit';
+  }
+}
+
+function drawEditorCanvas(){
+  const cv=document.getElementById('editor-canvas');
+  if(!cv)return;
+  const ctx=cv.getContext('2d');
+  drawNFT(ctx,editorSticks,EDITOR_SCALE);
+  const s=editorSticks[selectedIdx];
+  if(s){
+    ctx.strokeStyle='rgba(0,0,0,0.5)';
+    ctx.lineWidth=1;
+    ctx.setLineDash([3,3]);
+    const pad=2;
+    const minx=(s.x-Math.ceil(s.length/2)-pad)*EDITOR_SCALE;
+    const miny=(s.y-Math.ceil(s.length/2)-pad)*EDITOR_SCALE;
+    const sz=(s.length+pad*2+1)*EDITOR_SCALE;
+    ctx.strokeRect(minx,miny,sz,sz);
+    ctx.setLineDash([]);
+  }
+}
+
+function stickHitTest(px,py){
+  for(let k=editorSticks.length-1;k>=0;k--){
+    const s=editorSticks[k];
+    const h=Math.ceil(s.length/2)+1;
+    if(px>=s.x-h&&px<=s.x+h&&py>=s.y-h&&py<=s.y+h)return k;
+  }
+  return -1;
+}
+
+function buildEditor(){
+  const titleLbl=document.getElementById('editor-title-label');
+  if(titleLbl)titleLbl.textContent='Editor — Stix #'+editorTokenId;
+  drawEditorCanvas();
+  renderEditStatus();
+  updateSaveButton();
+  const locked = editCredits<=0;
+  const hint=document.getElementById('editor-hint');
+  if(hint)hint.textContent = locked ? 'Layout locked — burn a Stix to unlock one edit' : 'Drag a stick to move it · tap to select';
+  const list=document.getElementById('editor-stick-list');
+  if(!list)return;
+  list.innerHTML='';
+  editorSticks.forEach((s,i)=>{
+    const card=document.createElement('div');
+    card.className='editor-stick-card'+(i===selectedIdx?' active':'');
+    card.style.borderColor=i===selectedIdx?s.color:'#eee';
+    card.style.opacity=locked?'0.55':'1';
+    card.innerHTML='<div class="stick-label">Stick '+(i+1)+(i===selectedIdx?' · selected':'')+'</div><div class="stick-attrs"><span class="attr-pill"><span class="color-dot" style="background:'+s.color+'"></span></span><span class="attr-pill">'+s.length+'px</span><span class="attr-pill">'+DIR_NAMES[s.dir]+'</span></div>';
+    card.onclick=()=>{selectedIdx=i;buildEditor();};
+    list.appendChild(card);
+  });
+  const ctrl=document.getElementById('editor-controls');
+  if(ctrl){
+    if(locked){ ctrl.innerHTML=''; }
+    else{
+      const s=editorSticks[selectedIdx];
+      ctrl.innerHTML='<div class="stick-label" style="margin-bottom:8px;">Rotate selected</div><div style="display:flex;gap:6px;">'+
+        DIR_NAMES.map((d,di)=>'<button class="dir-btn'+(s.dir===di?' active':'')+'" onclick="setDir('+di+')">'+d+'</button>').join('')+'</div>';
+    }
+  }
+  if(!editorCanvasReady)initEditorCanvas();
+}
+
+function setDir(di){ if(editCredits<=0)return; editorSticks[selectedIdx].dir=di; layoutDirty=true; buildEditor(); }
+
+function initEditorCanvas(){
+  const cv=document.getElementById('editor-canvas');
+  if(!cv)return;
+  editorCanvasReady=true;
+  let dragging=false,dragOffX=0,dragOffY=0;
+  function getGridPos(e){
+    const rect=cv.getBoundingClientRect();
+    const cx=(e.touches?e.touches[0].clientX:e.clientX)-rect.left;
+    const cy=(e.touches?e.touches[0].clientY:e.clientY)-rect.top;
+    const scaleX=cv.width/rect.width, scaleY=cv.height/rect.height;
+    return {x:Math.round(cx*scaleX/EDITOR_SCALE),y:Math.round(cy*scaleY/EDITOR_SCALE)};
+  }
+  function start(e){
+    if(editCredits<=0)return;
+    const p=getGridPos(e);
+    const hit=stickHitTest(p.x,p.y);
+    if(hit>=0){
+      selectedIdx=hit;dragging=true;
+      dragOffX=p.x-editorSticks[hit].x;dragOffY=p.y-editorSticks[hit].y;
+      cv.style.cursor='grabbing';
+      buildEditor();
+      e.preventDefault();
+    }
+  }
+  function move(e){
+    if(!dragging)return;
+    const p=getGridPos(e);
+    const s=editorSticks[selectedIdx];
+    s.x=Math.max(0,Math.min(GRID-1,p.x-dragOffX));
+    s.y=Math.max(0,Math.min(GRID-1,p.y-dragOffY));
+    layoutDirty=true;
+    drawEditorCanvas();
+    e.preventDefault();
+  }
+  function end(){dragging=false;cv.style.cursor=editCredits>0?'grab':'not-allowed';buildEditor();}
+  cv.style.cursor=editCredits>0?'grab':'not-allowed';
+  cv.addEventListener('mousedown',start);
+  window.addEventListener('mousemove',move);
+  window.addEventListener('mouseup',end);
+  cv.addEventListener('touchstart',start,{passive:false});
+  window.addEventListener('touchmove',move,{passive:false});
+  window.addEventListener('touchend',end);
+}
+buildHero();buildHomeGallery();
+</script>
+</body>
+</html>
