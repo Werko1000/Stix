@@ -435,7 +435,7 @@ const GRID=50;
 // ── Contract config ──────────────────────────────────────────────────────────
 const CONTRACT_ADDRESS = "0x0D7954D181a3973F051da24e17f5Bf85020E2536";
 const CHAIN_ID_HEX = "0x14a34"; // Base Sepolia = 84532
-const RPC_URL = "https://sepolia.base.org";
+const RPC_URL = "https://base-sepolia.g.alchemy.com/v2/9t2l29UXveRJxvspv3swk";
 
 const ABI = [
   "function requestMint() payable returns (uint256)",
@@ -835,13 +835,27 @@ async function loadMyNFTs(){
     const contract=getContract();
     const provider=getProvider();
     const latest=await provider.getBlockNumber();
-    const fromBlock=Math.max(0, latest-50000);
-    console.log('loadMyNFTs: scanning blocks',fromBlock,'to',latest,'for',walletAddress);
+    console.log('loadMyNFTs: latest block',latest);
+
+    // Query in small chunks of 2000 blocks to avoid 413
+    const CHUNK=2000;
+    const LOOKBACK=20000; // ~11 hours on Base Sepolia
+    const from=Math.max(0, latest-LOOKBACK);
     const filter=contract.filters.Minted(walletAddress);
-    const events=await contract.queryFilter(filter, fromBlock, latest);
-    console.log('loadMyNFTs: found',events.length,'Minted events');
-    const ids=[...new Set(events.map(e=>e.args.tokenId.toNumber()))];
+
+    let allEvents=[];
+    for(let start=from; start<=latest; start+=CHUNK){
+      const end=Math.min(start+CHUNK-1, latest);
+      try{
+        const chunk=await contract.queryFilter(filter, start, end);
+        allEvents=allEvents.concat(chunk);
+      }catch(e){ console.warn('chunk error',start,'-',end,e.message); }
+    }
+
+    console.log('loadMyNFTs: found',allEvents.length,'Minted events');
+    const ids=[...new Set(allEvents.map(e=>e.args.tokenId.toNumber()))];
     console.log('loadMyNFTs: token ids',ids);
+
     const owned=[];
     for(const tokenId of ids){
       try{
@@ -849,16 +863,16 @@ async function loadMyNFTs(){
         if(owner.toLowerCase()===walletAddress.toLowerCase()){
           const rawSticks=await contract.getSticks(tokenId);
           const credits=await contract.editCredits(tokenId);
-          console.log('Token',tokenId,'sticks:',rawSticks.length,'credits:',Number(credits));
+          console.log('Token',tokenId,'→',rawSticks.length,'sticks, credits:',Number(credits));
           owned.push({id:tokenId,sticks:rawSticks.map(formatStick),credits:Number(credits)});
         }
-      }catch(e){console.warn('Token',tokenId,'error:',e);}
+      }catch(e){ console.warn('Token',tokenId,'error:',e.message); }
     }
     owned.sort((a,b)=>a.id-b.id);
     myNFTData=owned;
     myNFTsLoaded=true;
-    console.log('loadMyNFTs: loaded',owned.length,'NFTs');
-  }catch(e){console.error('loadMyNFTs error:',e);}
+    console.log('loadMyNFTs: done,',owned.length,'NFTs loaded');
+  }catch(e){ console.error('loadMyNFTs error:',e); }
 }
 
 async function buildMyNFTs(){
