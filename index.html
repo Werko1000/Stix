@@ -595,20 +595,61 @@ async function handleMint(){
     spinner.classList.add('active');
     const tx=await contract.requestMint({value:mintPriceWei});
     stext.textContent='Transaction sent…';
-    await tx.wait(1);
+    const receipt=await tx.wait(1);
     stext.textContent='Waiting for Chainlink VRF…';
-    // Listen for the Minted event for this wallet (VRF callback)
+
+    // Get the requestId from the MintRequested event in the receipt
     const readContract=getContract(false);
+    let found=false;
+
+    // Strategy 1: listen for Minted event
     readContract.once(readContract.filters.Minted(walletAddress),(minter,tokenId)=>{
+      if(found)return; found=true;
+      clearInterval(pollTimer);
+      if(revealTimer){clearTimeout(revealTimer);revealTimer=null;}
       spinner.classList.remove('active');
       revealMintFromChain(tokenId.toNumber());
     });
-    // Timeout fallback after 60s
+
+    // Strategy 2: poll totalMinted / ownerOf every 8 seconds
+    let pollCount=0;
+    const knownIds=new Set(myNFTData.map(n=>n.id));
+    const pollTimer=setInterval(async()=>{
+      pollCount++;
+      stext.textContent='Waiting for Chainlink VRF… ('+Math.round(pollCount*8)+'s)';
+      try {
+        // scan recent Minted events for our wallet
+        const events=await readContract.queryFilter(
+          readContract.filters.Minted(walletAddress),
+          receipt.blockNumber-1
+        );
+        for(const ev of events){
+          const tokenId=ev.args.tokenId.toNumber();
+          if(!knownIds.has(tokenId)&&!found){
+            found=true;
+            clearInterval(pollTimer);
+            if(revealTimer){clearTimeout(revealTimer);revealTimer=null;}
+            spinner.classList.remove('active');
+            revealMintFromChain(tokenId);
+            return;
+          }
+        }
+      }catch(e){}
+    },8000);
+
+    // Final timeout after 5 minutes
     revealTimer=setTimeout(()=>{
+      if(found)return;
+      found=true;
+      clearInterval(pollTimer);
       spinner.classList.remove('active');
       cta.disabled=false; cta.textContent='Mint a Stix';
-      toast('VRF is taking long — check My NFTs in a moment');
-    },60000);
+      toast('VRF is still processing — open My NFTs in a minute to see your token');
+      // Show a helpful message in the mint state
+      const stext2=document.getElementById('mint-spinner-text');
+      if(stext2)stext2.textContent='';
+    },300000); // 5 minutes
+
   } catch(e) {
     spinner.classList.remove('active');
     cta.disabled=false; cta.textContent='Mint a Stix';
