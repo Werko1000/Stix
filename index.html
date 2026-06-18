@@ -350,7 +350,7 @@ footer { border-top: 0.5px solid #eee; }
               <div class="mint-row"><span class="lbl">Canvas</span><span class="val">50 &times; 50 px</span></div>
               <div class="mint-row"><span class="lbl">Storage</span><span class="val">100% on-chain</span></div>
               <div class="mint-row"><span class="lbl">Network</span><span class="val">Base</span></div>
-              <div class="mint-row" style="border:none"><span class="lbl">Price</span><span class="val">TBD</span></div>
+              <div class="mint-row" style="border:none"><span class="lbl">Price</span><span class="val mint-price-display">TBD</span></div>
             </div>
             <button class="mint-cta" id="mint-cta" onclick="handleMint()">Mint a Stix</button>
           </div>
@@ -431,6 +431,50 @@ footer { border-top: 0.5px solid #eee; }
 const PALETTE=["#E63946","#F4A261","#E9C46A","#2A9D8F","#264653","#A8DADC","#457B9D","#1D3557","#F1FAEE","#C8B6FF","#FF6B6B","#FFE66D","#6BCB77","#4D96FF","#FF6FC8","#111111"];
 const DIR_NAMES=["--","|","↘","↗"];
 const GRID=50;
+
+// ── Contract config ──────────────────────────────────────────────────────────
+const CONTRACT_ADDRESS = "0x0D7954D181a3973F051da24e17f5Bf85020E2536";
+const CHAIN_ID_HEX = "0x14a34"; // Base Sepolia = 84532
+const RPC_URL = "https://sepolia.base.org";
+
+const ABI = [
+  "function requestMint() payable returns (uint256)",
+  "function mergeBurn(uint256 keepId, uint256 burnId)",
+  "function saveLayout(uint256 tokenId, tuple(uint8 color, uint8 length, uint8 x, uint8 y, uint8 dir)[] newSticks)",
+  "function getSticks(uint256 tokenId) view returns (tuple(uint8 color, uint8 length, uint8 x, uint8 y, uint8 dir)[])",
+  "function stickCount(uint256 tokenId) view returns (uint256)",
+  "function editCredits(uint256 tokenId) view returns (uint8)",
+  "function tokenURI(uint256 tokenId) view returns (string)",
+  "function price() view returns (uint256)",
+  "function mintOpen() view returns (bool)",
+  "function ownerOf(uint256 tokenId) view returns (address)",
+  "event Minted(address indexed minter, uint256 indexed tokenId)",
+  "event Merged(uint256 indexed keepId, uint256 indexed burnedId, uint8 newCredits)",
+  "event LayoutSaved(uint256 indexed tokenId, uint8 remainingCredits)"
+];
+
+function getProvider() {
+  const eth = getEthereum();
+  if (!eth) return new ethers.providers.JsonRpcProvider(RPC_URL);
+  return new ethers.providers.Web3Provider(eth);
+}
+function getContract(withSigner=false) {
+  const provider = getProvider();
+  if (withSigner) return new ethers.Contract(CONTRACT_ADDRESS, ABI, provider.getSigner());
+  return new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
+}
+
+// Convert on-chain stick tuple to our JS format
+function formatStick(s) {
+  return { color: PALETTE[s.color], length: s.length, x: s.x, y: s.y, dir: s.dir };
+}
+// Convert JS stick back to on-chain tuple
+function toChainStick(s) {
+  const colorIdx = PALETTE.indexOf(s.color);
+  return { color: colorIdx >= 0 ? colorIdx : 0, length: s.length, x: s.x, y: s.y, dir: s.dir };
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 let walletAddress=null;
 function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
 function makeStick(){return{color:PALETTE[rand(0,15)],length:rand(5,15),x:rand(8,42),y:rand(8,42),dir:rand(0,3)};}
@@ -516,6 +560,18 @@ function updateWalletUI(){
   else{btn.classList.remove('connected');lbl.textContent='Connect wallet';if(mob)mob.textContent='Connect wallet';}
 }
 let revealTimer=null;
+let mintPriceWei=ethers.BigNumber.from(0);
+
+async function loadPrice(){
+  try{
+    const c=getContract();
+    mintPriceWei=await c.price();
+    const eth=parseFloat(ethers.utils.formatEther(mintPriceWei));
+    const priceStr=eth===0?'Free':eth.toFixed(4)+' ETH';
+    document.querySelectorAll('.mint-price-display').forEach(el=>el.textContent=priceStr);
+  }catch(e){}
+}
+
 function resetMint(){
   if(revealTimer){clearTimeout(revealTimer);revealTimer=null;}
   document.getElementById('mint-state-idle').style.display='';
@@ -527,61 +583,98 @@ function resetMint(){
   if(cv){const ctx=cv.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,cv.width,cv.height);}
 }
 
-function handleMint(){
+async function handleMint(){
   if(!walletAddress){toast('Connect your wallet first');return;}
   const cta=document.getElementById('mint-cta');
-  cta.disabled=true;cta.textContent='Minting…';
+  cta.disabled=true; cta.textContent='Confirm in wallet…';
   const spinner=document.getElementById('mint-spinner');
   const stext=document.getElementById('mint-spinner-text');
-  spinner.classList.add('active');
-  // Simulate the VRF request -> fulfill timeline with status messages.
-  const steps=['Requesting randomness…','Waiting for Chainlink VRF…','Randomness received…','Writing sticks on-chain…'];
-  let si=0; stext.textContent=steps[0];
-  const stepTimer=setInterval(()=>{si++;if(si<steps.length)stext.textContent=steps[si];},900);
-  revealTimer=setTimeout(()=>{
-    clearInterval(stepTimer);
+  try {
+    const contract=getContract(true);
+    stext.textContent='Confirm in wallet…';
+    spinner.classList.add('active');
+    const tx=await contract.requestMint({value:mintPriceWei});
+    stext.textContent='Transaction sent…';
+    await tx.wait(1);
+    stext.textContent='Waiting for Chainlink VRF…';
+    // Listen for the Minted event for this wallet (VRF callback)
+    const readContract=getContract(false);
+    readContract.once(readContract.filters.Minted(walletAddress),(minter,tokenId)=>{
+      spinner.classList.remove('active');
+      revealMintFromChain(tokenId.toNumber());
+    });
+    // Timeout fallback after 60s
+    revealTimer=setTimeout(()=>{
+      spinner.classList.remove('active');
+      cta.disabled=false; cta.textContent='Mint a Stix';
+      toast('VRF is taking long — check My NFTs in a moment');
+    },60000);
+  } catch(e) {
     spinner.classList.remove('active');
-    revealMint();
-  },3800);
+    cta.disabled=false; cta.textContent='Mint a Stix';
+    if(e.code===4001)toast('Transaction cancelled');
+    else toast('Mint failed: '+(e.reason||e.message||'unknown error'));
+  }
 }
 
-function revealMint(){
-  // Generate the freshly "minted" NFT (in production: read it back from the contract by tokenId).
-  const newId=nextMintId++;
-  const sticks=makeNFT(3);
-  const nft={id:newId,sticks:sticks};
-  myNFTData.unshift(nft);
-
-  const cv=document.getElementById('mint-canvas');
-  drawNFT(cv.getContext('2d'),sticks,cv.width/GRID);
-  cv.classList.remove('reveal-pop');void cv.offsetWidth;cv.classList.add('reveal-pop');
-
-  document.getElementById('mint-state-idle').style.display='none';
-  const rev=document.getElementById('mint-state-revealed');
-  rev.style.display='';
-  document.getElementById('reveal-title').textContent='Meet Stix #'+newId;
-  const list=document.getElementById('reveal-stick-list');
-  list.innerHTML='';
-  const acc=['#E63946','#2A9D8F','#C8B6FF'];
-  sticks.forEach((s,i)=>{
-    const d=document.createElement('div');
-    d.style.cssText='border-left:3px solid '+acc[i]+';padding:9px 13px;margin-bottom:8px;background:#fafafa;border-radius:0 6px 6px 0;';
-    d.innerHTML='<div style="font-size:11px;color:#999;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Stick '+(i+1)+'</div><div class="stick-attrs"><span class="attr-pill"><span class="color-dot" style="background:'+s.color+'"></span>'+s.color+'</span><span class="attr-pill">'+s.length+'px</span><span class="attr-pill">'+DIR_NAMES[s.dir]+'</span></div>';
-    list.appendChild(d);
-  });
-  toast('Minted · Stix #'+newId);
+async function revealMintFromChain(tokenId){
+  if(revealTimer){clearTimeout(revealTimer);revealTimer=null;}
+  try {
+    const contract=getContract();
+    const rawSticks=await contract.getSticks(tokenId);
+    const credits=await contract.editCredits(tokenId);
+    const sticks=rawSticks.map(formatStick);
+    const nft={id:tokenId,sticks,credits:credits};
+    myNFTData=myNFTData.filter(x=>x.id!==tokenId);
+    myNFTData.unshift(nft);
+    const cv=document.getElementById('mint-canvas');
+    drawNFT(cv.getContext('2d'),sticks,cv.width/GRID);
+    cv.classList.remove('reveal-pop');void cv.offsetWidth;cv.classList.add('reveal-pop');
+    document.getElementById('mint-state-idle').style.display='none';
+    const rev=document.getElementById('mint-state-revealed');
+    rev.style.display='';
+    document.getElementById('reveal-title').textContent='Meet Stix #'+tokenId;
+    const list=document.getElementById('reveal-stick-list');
+    list.innerHTML='';
+    const acc=['#E63946','#2A9D8F','#C8B6FF'];
+    sticks.forEach((s,i)=>{
+      const d=document.createElement('div');
+      d.style.cssText='border-left:3px solid '+acc[i]+';padding:9px 13px;margin-bottom:8px;background:#fafafa;border-radius:0 6px 6px 0;';
+      d.innerHTML='<div style="font-size:11px;color:#999;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Stick '+(i+1)+'</div><div class="stick-attrs"><span class="attr-pill"><span class="color-dot" style="background:'+s.color+'"></span>'+s.color+'</span><span class="attr-pill">'+s.length+'px</span><span class="attr-pill">'+DIR_NAMES[s.dir]+'</span></div>';
+      list.appendChild(d);
+    });
+    toast('Minted · Stix #'+tokenId+' 🎉');
+    const cta=document.getElementById('mint-cta');
+    if(cta){cta.disabled=false;cta.textContent='Mint a Stix';}
+  } catch(e) {
+    toast('Error loading minted token: '+e.message);
+  }
 }
-function handleSave(){
+
+async function handleSave(){
   if(!walletAddress){toast('Connect your wallet first');return;}
   if(editCredits<=0){toast('No edit credits. Burn a Stix first.');return;}
   if(!layoutDirty){toast('Move at least one stick before saving');return;}
-  editCredits--;
-  layoutDirty=false;
-  // persist back to the collection
-  const nft=myNFTData.find(x=>x.id===editorTokenId);
-  if(nft){nft.sticks=editorSticks.map(s=>({color:s.color,length:s.length,x:s.x,y:s.y,dir:s.dir}));nft.credits=editCredits;}
-  buildEditor();
-  toast('Layout saved on-chain · 1 credit used');
+  const btn=document.getElementById('save-btn');
+  btn.disabled=true; btn.textContent='Confirm in wallet…';
+  try {
+    const contract=getContract(true);
+    const chainSticks=editorSticks.map(toChainStick);
+    const tx=await contract.saveLayout(editorTokenId,chainSticks);
+    btn.textContent='Saving on-chain…';
+    await tx.wait(1);
+    editCredits--;
+    layoutDirty=false;
+    const nft=myNFTData.find(x=>x.id===editorTokenId);
+    if(nft){nft.sticks=editorSticks.map(s=>({...s}));nft.credits=editCredits;}
+    buildEditor();
+    toast('Layout saved on-chain · 1 credit used ✅');
+  } catch(e) {
+    if(e.code===4001)toast('Transaction cancelled');
+    else toast('Save failed: '+(e.reason||e.message||'unknown error'));
+    btn.disabled=false;
+    buildEditor();
+  }
 }
 function handleBurn(){
   // Burning is done on the dedicated Burn page where you pick keep + burn.
@@ -649,15 +742,50 @@ function filterGallery(btn,f){
   else if(f==='9')d=galleryData.filter(x=>!x.art&&x.sticks.length>=9);
   renderGallery(d);
 }
-let myNFTData=[{id:42,sticks:makeNFT(3),credits:0},{id:17,sticks:makeNFT(6),credits:1},{id:88,sticks:makeNFT(9),credits:0}];
-let nextMintId=101;
+let myNFTData=[];
+let nextMintId=1;
+let myNFTsLoaded=false;
 
-function buildMyNFTs(){
+async function loadMyNFTs(){
+  if(!walletAddress) return;
+  try {
+    const contract=getContract();
+    // Find all Minted events for this wallet
+    const filter=contract.filters.Minted(walletAddress);
+    const events=await contract.queryFilter(filter,-100000);
+    const ids=[...new Set(events.map(e=>e.args.tokenId.toNumber()))];
+    const owned=[];
+    for(const tokenId of ids){
+      try{
+        const owner=await contract.ownerOf(tokenId);
+        if(owner.toLowerCase()===walletAddress.toLowerCase()){
+          const rawSticks=await contract.getSticks(tokenId);
+          const credits=await contract.editCredits(tokenId);
+          owned.push({id:tokenId,sticks:rawSticks.map(formatStick),credits:Number(credits)});
+        }
+      }catch(e){}
+    }
+    owned.sort((a,b)=>a.id-b.id);
+    myNFTData=owned;
+    myNFTsLoaded=true;
+  }catch(e){console.error('loadMyNFTs error:',e);}
+}
+
+async function buildMyNFTs(){
   const wrap=document.getElementById('mynft-content');
-  if(!walletAddress){wrap.innerHTML='<div class="connect-prompt"><h2>Your collection awaits.</h2><p>Connect your wallet to see the Stix you own and start building your canvas.</p><button class="btn-primary" onclick="handleWalletClick()">Connect wallet</button></div>';return;}
-  if(myNFTData.length===0){wrap.innerHTML='<div class="connect-prompt"><h2>No Stix yet.</h2><p>Mint your first Stix to start your collection.</p><button class="btn-primary" onclick="showPage(\'mint\')">Mint a Stix</button></div>';return;}
+  if(!walletAddress){
+    wrap.innerHTML='<div class="connect-prompt"><h2>Your collection awaits.</h2><p>Connect your wallet to see the Stix you own.</p><button class="btn-primary" onclick="handleWalletClick()">Connect wallet</button></div>';
+    return;
+  }
+  wrap.innerHTML='<div style="text-align:center;padding:40px;color:#999;font-size:13px;">Loading your Stix from Base Sepolia…</div>';
+  await loadMyNFTs();
+  if(myNFTData.length===0){
+    wrap.innerHTML='<div class="connect-prompt"><h2>No Stix yet.</h2><p>Mint your first Stix to start your collection.</p><button class="btn-primary" onclick="showPage(\'mint\')">Mint a Stix</button></div>';
+    return;
+  }
   wrap.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;"><p style="font-size:13px;color:#666;">'+myNFTData.length+' Stix in your wallet</p><button class="btn-outline" style="font-size:13px;padding:8px 18px;" onclick="showPage(\'burn\')">Burn &amp; merge →</button></div><div class="mynft-grid" id="mynft-grid"></div>';
-  const grid=document.getElementById('mynft-grid');const acc=["#E63946","#2A9D8F","#C8B6FF","#F4A261"];
+  const grid=document.getElementById('mynft-grid');
+  const acc=["#E63946","#2A9D8F","#C8B6FF","#F4A261"];
   myNFTData.forEach((item,i)=>{
     const card=document.createElement('div');card.className='mynft-card';card.style.borderTop='3px solid '+acc[i%acc.length];
     const c=makeThumb(item.sticks,180);c.style.cssText='width:100%;image-rendering:pixelated;display:block;';
@@ -731,16 +859,29 @@ function renderBurnConfirm(){
   drawNFT(cv.getContext('2d'),merged,150/GRID);
 }
 
-function confirmBurn(){
+async function confirmBurn(){
   const keep=myNFTData.find(x=>x.id===burnKeepId);
   const burn=myNFTData.find(x=>x.id===burnBurnId);
-  keep.sticks=keep.sticks.concat(burn.sticks);
-  keep.credits=(keep.credits||0)+1;
-  myNFTData=myNFTData.filter(x=>x.id!==burnBurnId);
-  const keptId=keep.id;
-  burnKeepId=null;burnBurnId=null;
-  toast('Burned #'+burn.id+' · #'+keptId+' now has '+keep.sticks.length+' sticks + 1 edit');
-  buildBurn();
+  const burnGoBtn=document.querySelector('.burn-go');
+  if(burnGoBtn){burnGoBtn.disabled=true;burnGoBtn.textContent='Confirm in wallet…';}
+  try {
+    const contract=getContract(true);
+    const tx=await contract.mergeBurn(burnKeepId,burnBurnId);
+    if(burnGoBtn)burnGoBtn.textContent='Burning on-chain…';
+    await tx.wait(1);
+    // Update local state
+    keep.sticks=keep.sticks.concat(burn.sticks);
+    keep.credits=(keep.credits||0)+1;
+    myNFTData=myNFTData.filter(x=>x.id!==burnBurnId);
+    const keptId=keep.id;
+    burnKeepId=null;burnBurnId=null;
+    toast('Burned #'+burn.id+' · Stix #'+keptId+' now has '+keep.sticks.length+' sticks + 1 edit ✅');
+    buildBurn();
+  } catch(e) {
+    if(burnGoBtn){burnGoBtn.disabled=false;burnGoBtn.textContent='Burn #'+burnBurnId+' → keep #'+burnKeepId;}
+    if(e.code===4001)toast('Transaction cancelled');
+    else toast('Burn failed: '+(e.reason||e.message||'unknown error'));
+  }
 }
 let editorSticks=makeNFT(3);let selectedIdx=0;
 const EDITOR_SCALE=6;
@@ -891,7 +1032,7 @@ function initEditorCanvas(){
   window.addEventListener('touchmove',move,{passive:false});
   window.addEventListener('touchend',end);
 }
-buildHero();buildHomeGallery();
+buildHero();buildHomeGallery();loadPrice();
 </script>
 </body>
 </html>
