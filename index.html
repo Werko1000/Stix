@@ -580,7 +580,26 @@ function resetMint(){
   const cta=document.getElementById('mint-cta');
   if(cta){cta.disabled=false;cta.textContent='Mint a Stix';}
   const cv=document.getElementById('mint-canvas');
-  if(cv){const ctx=cv.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,cv.width,cv.height);}
+  if(cv){
+    const ctx=cv.getContext('2d');
+    const sc=cv.width/GRID;
+    ctx.fillStyle='#f5f5f5';ctx.fillRect(0,0,cv.width,cv.height);
+    // Greyed-out preview sticks as decoration
+    makeNFT(9).forEach(s=>{
+      const h=Math.floor(s.length/2);
+      for(let i=-h;i<=h;i++){
+        let x=s.x,y=s.y;
+        if(s.dir===0)x+=i;else if(s.dir===1)y+=i;else if(s.dir===2){x+=i;y+=i;}else{x+=i;y-=i;}
+        pp(ctx,x,y,'#ddd',sc);
+      }
+    });
+    // "?" overlay
+    ctx.fillStyle='rgba(245,245,245,0.6)';ctx.fillRect(0,0,cv.width,cv.height);
+    ctx.fillStyle='#bbb';
+    ctx.font='bold '+Math.round(cv.width*0.25)+'px sans-serif';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('?',cv.width/2,cv.height/2);
+  }
 }
 
 async function handleMint(){
@@ -618,10 +637,11 @@ async function handleMint(){
       pollCount++;
       stext.textContent='Waiting for Chainlink VRF… ('+Math.round(pollCount*8)+'s)';
       try {
-        // scan recent Minted events for our wallet
+        // scan recent Minted events for our wallet - only from mint block onwards
         const events=await readContract.queryFilter(
           readContract.filters.Minted(walletAddress),
-          receipt.blockNumber-1
+          receipt.blockNumber,
+          receipt.blockNumber+500
         );
         for(const ev of events){
           const tokenId=ev.args.tokenId.toNumber();
@@ -791,9 +811,12 @@ async function loadMyNFTs(){
   if(!walletAddress) return;
   try {
     const contract=getContract();
-    // Find all Minted events for this wallet
+    const provider=getProvider();
+    const latest=await provider.getBlockNumber();
+    // Base Sepolia: ~2s blocks, look back ~7 days = ~302400 blocks, cap at 50000 to avoid 413
+    const fromBlock=Math.max(0, latest-50000);
     const filter=contract.filters.Minted(walletAddress);
-    const events=await contract.queryFilter(filter,-100000);
+    const events=await contract.queryFilter(filter, fromBlock, latest);
     const ids=[...new Set(events.map(e=>e.args.tokenId.toNumber()))];
     const owned=[];
     for(const tokenId of ids){
