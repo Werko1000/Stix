@@ -456,14 +456,19 @@ const ABI = [
 ];
 
 function getProvider() {
+  // Always use Alchemy for read calls — MetaMask's RPC is too limited
+  return new ethers.providers.JsonRpcProvider(RPC_URL);
+}
+function getProviderWithSigner() {
   const eth = getEthereum();
-  if (!eth) return new ethers.providers.JsonRpcProvider(RPC_URL);
+  if (!eth) throw new Error('No wallet connected');
   return new ethers.providers.Web3Provider(eth);
 }
 function getContract(withSigner=false) {
-  const provider = getProvider();
-  if (withSigner) return new ethers.Contract(CONTRACT_ADDRESS, ABI, provider.getSigner());
-  return new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
+  if (withSigner) {
+    return new ethers.Contract(CONTRACT_ADDRESS, ABI, getProviderWithSigner().getSigner());
+  }
+  return new ethers.Contract(CONTRACT_ADDRESS, ABI, getProvider());
 }
 
 // Convert on-chain stick tuple to our JS format (ethers v5 returns BigNumber for uint8!)
