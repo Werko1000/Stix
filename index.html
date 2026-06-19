@@ -171,7 +171,8 @@ nav { border-bottom: 0.5px solid #eee; background: #fff; position: sticky; top: 
 .connect-prompt { text-align: center; padding: 72px 20px; }
 .connect-prompt h2 { font-size: 24px; font-weight: 500; margin-bottom: 10px; }
 .connect-prompt p { font-size: 15px; color: #666; margin-bottom: 28px; max-width: 360px; margin-left: auto; margin-right: auto; }
-.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(8px); background: #111; color: #fff; padding: 11px 20px; border-radius: 8px; font-size: 13px; opacity: 0; transition: all 0.25s; pointer-events: none; z-index: 999; white-space: nowrap; }
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(8px); background: #111; color: #fff; padding: 11px 20px; border-radius: 8px; font-size: 13px; opacity: 0; transition: all 0.25s; pointer-events: none; z-index: 999; white-space: nowrap; max-width: 90vw; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 footer { border-top: 0.5px solid #eee; }
 .footer-inner { max-width: var(--max); margin: 0 auto; padding: 28px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
@@ -557,7 +558,20 @@ function showPage(id){
   if(id==='mint')resetMint();
   if(id==='burn')buildBurn();
 }
-function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2800);}
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.innerHTML=msg;
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),2800);
+}
+function showActionToast(msg, btnLabel, onClick){
+  const el=document.getElementById('toast');
+  const btnId='action-toast-btn-'+Date.now();
+  el.innerHTML=msg+'<button id="'+btnId+'" style="margin-left:12px;padding:4px 12px;background:#fff;color:#111;border:none;border-radius:4px;font-size:12px;font-weight:600;cursor:pointer;">'+btnLabel+'</button>';
+  el.classList.add('show');
+  document.getElementById(btnId).onclick=()=>{el.classList.remove('show');onClick();};
+  setTimeout(()=>el.classList.remove('show'),7000);
+}
 let detectedProvider=null;
 const eip6963Providers=[];
 window.addEventListener('eip6963:announceProvider',(e)=>{
@@ -1037,13 +1051,17 @@ async function confirmBurn(){
     const keptId=keep.id;
     burnKeepId=null;burnBurnId=null;
     toast('Burned #'+burn.id+' · Stix #'+keptId+' now has '+keep.sticks.length+' sticks + 1 edit ✅');
-    // Offer to go directly to editor
-    setTimeout(()=>{
-      if(confirm('Open Stix #'+keptId+' in the editor now?')){
-        openEditor(keptId);
-      }
-    },500);
     buildBurn();
+    // Show in-page success banner with edit button
+    setTimeout(()=>{
+      const wrap=document.getElementById('burn-content');
+      if(wrap){
+        const banner=document.createElement('div');
+        banner.style.cssText='background:#edfaf5;border:0.5px solid #b8e6d6;border-radius:10px;padding:20px 24px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;';
+        banner.innerHTML='<div><div style="font-size:15px;font-weight:500;color:#2A9D8F;margin-bottom:4px;">Merge complete! 🎉</div><div style="font-size:13px;color:#555;">Stix #'+keptId+' now has '+keep.sticks.length+' sticks and 1 edit credit.</div></div><button onclick="openEditor('+keptId+')" style="padding:10px 20px;background:#111;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;">Edit now →</button>';
+        wrap.prepend(banner);
+      }
+    },400);
   } catch(e) {
     if(burnGoBtn){burnGoBtn.disabled=false;burnGoBtn.textContent='Burn #'+burnBurnId+' → keep #'+burnKeepId;}
     if(e.code===4001)toast('Transaction cancelled');
@@ -1061,13 +1079,20 @@ function openEditor(id){
   const nft=myNFTData.find(x=>x.id===id);
   if(!nft){ toast('NFT not found – open My NFTs first'); return; }
   editorTokenId=id;
-  editorSticks=nft.sticks.map(s=>({color:s.color,length:s.length,x:Number(s.x),y:Number(s.y),dir:Number(s.dir)}));
+  // Force all values to plain Numbers (guard against BigNumber from chain)
+  editorSticks=nft.sticks.map(s=>({
+    color:  typeof s.color==='string' ? s.color : (PALETTE[Number(s.color)]||PALETTE[0]),
+    length: Number(s.length),
+    x:      Number(s.x),
+    y:      Number(s.y),
+    dir:    Number(s.dir)
+  }));
+  console.log('Editor sticks:', editorSticks.map(s=>({len:s.length,x:s.x,y:s.y,dir:s.dir})));
   editCredits=nft.credits||0;
   selectedIdx=0;
   layoutDirty=false;
   editorCanvasReady=false;
   showPage('editor');
-  // Pre-fill name input
   setTimeout(()=>{
     const inp=document.getElementById('name-input');
     if(inp&&nft.name&&nft.name!=='Untitled')inp.placeholder=nft.name;
@@ -1102,6 +1127,7 @@ function drawEditorCanvas(){
   const cv=document.getElementById('editor-canvas');
   if(!cv)return;
   const ctx=cv.getContext('2d');
+  console.log('drawEditor sticks:', editorSticks.map(s=>({len:s.length,type:typeof s.length,x:s.x,y:s.y,dir:s.dir})));
   drawNFT(ctx,editorSticks,EDITOR_SCALE);
   const s=editorSticks[selectedIdx];
   if(s){
