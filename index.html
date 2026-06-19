@@ -462,12 +462,19 @@ function getProvider() {
 function getProviderWithSigner() {
   const eth = getEthereum();
   if (!eth) throw new Error('No wallet connected');
-  return new ethers.providers.Web3Provider(eth);
+  // Use Alchemy as base provider but inject Rabby/MetaMask as signer
+  const web3provider = new ethers.providers.Web3Provider(eth);
+  return web3provider;
 }
 function getContract(withSigner=false) {
   if (withSigner) {
-    return new ethers.Contract(CONTRACT_ADDRESS, ABI, getProviderWithSigner().getSigner());
+    // For sending transactions: use wallet provider (Rabby/MetaMask)
+    const eth = getEthereum();
+    if (!eth) throw new Error('No wallet connected');
+    const web3provider = new ethers.providers.Web3Provider(eth);
+    return new ethers.Contract(CONTRACT_ADDRESS, ABI, web3provider.getSigner());
   }
+  // For reading: always use Alchemy
   return new ethers.Contract(CONTRACT_ADDRESS, ABI, getProvider());
 }
 
@@ -642,8 +649,10 @@ async function handleMint(){
     stext.textContent='Confirm in wallet…';
     spinner.classList.add('active');
     const tx=await contract.requestMint({value:mintPriceWei});
-    stext.textContent='Transaction sent…';
-    const receipt=await tx.wait(1);
+    stext.textContent='Transaction sent… '+tx.hash.slice(0,10)+'…';
+    // Use Alchemy to wait for receipt (more reliable than Rabby)
+    const alchemyProvider=getProvider();
+    const receipt=await alchemyProvider.waitForTransaction(tx.hash, 1);
     stext.textContent='Waiting for Chainlink VRF…';
 
     // Simple polling: check tokensOfOwner every 8s until a new token appears
