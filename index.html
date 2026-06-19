@@ -347,7 +347,7 @@ footer { border-top: 0.5px solid #eee; }
             <h3>Mint is a surprise.</h3>
             <p class="mint-desc">You can't pick your sticks. Each Stix gets three lines generated from on-chain Chainlink randomness at the moment you mint — unmanipulable, unknowable in advance, revealed right here once it lands.</p>
             <div class="mint-rows">
-              <div class="mint-row"><span class="lbl">Sticks</span><span class="val">3 (random)</span></div>
+              <div class="mint-row"><span class="lbl">Sticks</span><span class="val">3–6 (random)</span></div>
               <div class="mint-row"><span class="lbl">Canvas</span><span class="val">50 &times; 50 px</span></div>
               <div class="mint-row"><span class="lbl">Storage</span><span class="val">100% on-chain</span></div>
               <div class="mint-row"><span class="lbl">Network</span><span class="val">Base</span></div>
@@ -442,7 +442,7 @@ const DIR_NAMES=["--","|","↘","↗"];
 const GRID=50;
 
 // ── Contract config ──────────────────────────────────────────────────────────
-const CONTRACT_ADDRESS = "0xeF6867D6ba3b3694b1097f9d20959EE6a68F9013";
+const CONTRACT_ADDRESS = "0x899BCDbF7B28e33f53A12D226775423972b2e544";
 const CHAIN_ID_HEX = "0x14a34"; // Base Sepolia = 84532
 const RPC_URL = "https://base-sepolia.g.alchemy.com/v2/9t2l29UXveRJxvspv3swk";
 
@@ -491,6 +491,27 @@ function formatStick(s) {
     y:      Number(s.y),
     dir:    Number(s.dir)
   };
+}
+
+// Fetch on-chain SVG image from tokenURI
+async function fetchTokenImage(tokenId){
+  try{
+    const contract=getContract();
+    const uri=await contract.tokenURI(tokenId);
+    const json=JSON.parse(atob(uri.split(',')[1]));
+    return json.image; // "data:image/svg+xml;base64,..."
+  }catch(e){ console.warn('fetchTokenImage error:',e.message); return null; }
+}
+
+// Create an <img> that shows the on-chain SVG (with placeholder while loading)
+function makeOnchainImg(tokenId, size){
+  const img=document.createElement('img');
+  img.style.cssText='width:100%;display:block;border-radius:0;';
+  img.alt='Stix #'+tokenId;
+  // grey placeholder
+  img.src='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50"><rect width="50" height="50" fill="%23f5f5f5"/></svg>';
+  fetchTokenImage(tokenId).then(src=>{ if(src) img.src=src; });
+  return img;
 }
 // Convert JS stick back to on-chain tuple
 function toChainStick(s) {
@@ -722,9 +743,17 @@ async function revealMintFromChain(tokenId){
     const nft={id:tokenId,sticks,credits:credits};
     myNFTData=myNFTData.filter(x=>x.id!==tokenId);
     myNFTData.unshift(nft);
-    const cv=document.getElementById('mint-canvas');
-    drawNFT(cv.getContext('2d'),sticks,cv.width/GRID);
-    cv.classList.remove('reveal-pop');void cv.offsetWidth;cv.classList.add('reveal-pop');
+    // Show on-chain SVG (with pulse animation!) replacing the canvas
+    const mintVisual=document.querySelector('.mint-visual');
+    if(mintVisual){
+      const img=document.createElement('img');
+      img.style.cssText='width:300px;height:300px;display:block;border:0.5px solid #eee;border-radius:12px;';
+      img.alt='Stix #'+tokenId;
+      img.classList.add('reveal-pop');
+      mintVisual.innerHTML='';
+      mintVisual.appendChild(img);
+      fetchTokenImage(tokenId).then(src=>{ if(src) img.src=src; });
+    }
     document.getElementById('mint-state-idle').style.display='none';
     const rev=document.getElementById('mint-state-revealed');
     rev.style.display='';
@@ -915,12 +944,13 @@ async function buildMyNFTs(){
   const acc=["#E63946","#2A9D8F","#C8B6FF","#F4A261"];
   myNFTData.forEach((item,i)=>{
     const card=document.createElement('div');card.className='mynft-card';card.style.borderTop='3px solid '+acc[i%acc.length];
-    const c=makeThumb(item.sticks,180);c.style.cssText='width:100%;image-rendering:pixelated;display:block;';
+    // Use on-chain SVG img for real NFTs (shows animation!)
+    const img=makeOnchainImg(item.id, 180);
     const footer=document.createElement('div');footer.className='mynft-footer';
     const creditBadge=item.credits>0?'<span style="font-size:10px;color:var(--c4);">'+item.credits+' edit'+(item.credits>1?'s':'')+'</span>':'';
     const stage=getStage(item.sticks.length);
     footer.innerHTML='<div class="mynft-info"><h4>'+(item.name||'Untitled')+' #'+item.id+'</h4><span>'+stage+' · '+item.sticks.length+' sticks '+creditBadge+'</span></div><button class="edit-btn" onclick="openEditor('+item.id+')">edit</button>';
-    card.appendChild(c);card.appendChild(footer);grid.appendChild(card);
+    card.appendChild(img);card.appendChild(footer);grid.appendChild(card);
   });
 }
 
