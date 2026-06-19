@@ -462,19 +462,21 @@ function getProvider() {
 function getProviderWithSigner() {
   const eth = getEthereum();
   if (!eth) throw new Error('No wallet connected');
-  // Use Alchemy as base provider but inject Rabby/MetaMask as signer
   const web3provider = new ethers.providers.Web3Provider(eth);
   return web3provider;
 }
 function getContract(withSigner=false) {
   if (withSigner) {
-    // For sending transactions: use wallet provider (Rabby/MetaMask)
+    // Sign with Rabby but broadcast via Alchemy for reliable propagation
     const eth = getEthereum();
     if (!eth) throw new Error('No wallet connected');
     const web3provider = new ethers.providers.Web3Provider(eth);
-    return new ethers.Contract(CONTRACT_ADDRESS, ABI, web3provider.getSigner());
+    const signer = web3provider.getSigner();
+    // Wrap: use Alchemy provider but inject Rabby signer
+    const alchemyProvider = getProvider();
+    const wrappedSigner = signer.connect(alchemyProvider);
+    return new ethers.Contract(CONTRACT_ADDRESS, ABI, wrappedSigner);
   }
-  // For reading: always use Alchemy
   return new ethers.Contract(CONTRACT_ADDRESS, ABI, getProvider());
 }
 
