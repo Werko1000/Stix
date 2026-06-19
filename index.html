@@ -646,36 +646,19 @@ async function handleMint(){
     const receipt=await tx.wait(1);
     stext.textContent='Waiting for Chainlink VRF…';
 
-    // Get the requestId from the MintRequested event in the receipt
+    // Simple polling: check tokensOfOwner every 8s until a new token appears
     const readContract=getContract(false);
     let found=false;
-
-    // Strategy 1: listen for Minted event
-    readContract.once(readContract.filters.Minted(walletAddress),(minter,tokenId)=>{
-      if(found)return; found=true;
-      clearInterval(pollTimer);
-      if(revealTimer){clearTimeout(revealTimer);revealTimer=null;}
-      spinner.classList.remove('active');
-      revealMintFromChain(tokenId.toNumber());
-    });
-
-    // Strategy 2: poll every 8 seconds up to latest block
     let pollCount=0;
     const knownIds=new Set(myNFTData.map(n=>n.id));
+
     const pollTimer=setInterval(async()=>{
       pollCount++;
       stext.textContent='Waiting for Chainlink VRF… ('+Math.round(pollCount*8)+'s)';
       try {
-        const provider2=getProvider();
-        const latest2=await provider2.getBlockNumber();
-        const chunkEnd=Math.min(receipt.blockNumber+2000, latest2);
-        const events=await readContract.queryFilter(
-          readContract.filters.Minted(walletAddress),
-          receipt.blockNumber,
-          chunkEnd
-        );
-        for(const ev of events){
-          const tokenId=ev.args.tokenId.toNumber();
+        const ids=await readContract.tokensOfOwner(walletAddress);
+        for(const id of ids){
+          const tokenId=id.toNumber();
           if(!knownIds.has(tokenId)&&!found){
             found=true;
             clearInterval(pollTimer);
