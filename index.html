@@ -650,23 +650,21 @@ async function handleMint(){
     spinner.classList.add('active');
     const tx=await contract.requestMint({value:mintPriceWei});
     stext.textContent='Transaction sent… '+tx.hash.slice(0,10)+'…';
-    // Use Alchemy to wait for receipt (more reliable than Rabby)
-    const alchemyProvider=getProvider();
-    const receipt=await alchemyProvider.waitForTransaction(tx.hash, 1);
-    stext.textContent='Waiting for Chainlink VRF…';
 
-    // Snapshot which tokens we had BEFORE this mint
+    // Start polling immediately — don't wait for receipt (Alchemy may not see Rabby tx instantly)
     const readContract=getContract(false);
     let found=false;
     let pollCount=0;
 
-    // Get current token list as baseline (fresh from chain)
+    // Snapshot current tokens as baseline
     let knownIds=new Set();
     try{
       const currentIds=await readContract.tokensOfOwner(walletAddress);
       currentIds.forEach(id=>knownIds.add(id.toNumber()));
-      console.log('Mint polling: known ids before mint:', [...knownIds]);
+      console.log('Mint polling: baseline ids:', [...knownIds]);
     }catch(e){ console.warn('baseline error:',e.message); }
+
+    stext.textContent='Waiting for Chainlink VRF…';
 
     const pollTimer=setInterval(async()=>{
       pollCount++;
