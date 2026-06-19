@@ -433,7 +433,7 @@ const DIR_NAMES=["--","|","↘","↗"];
 const GRID=50;
 
 // ── Contract config ──────────────────────────────────────────────────────────
-const CONTRACT_ADDRESS = "0x0D7954D181a3973F051da24e17f5Bf85020E2536";
+const CONTRACT_ADDRESS = "0x6e934b8171D50B0BcB4Cbc548fae0606702f5E12";
 const CHAIN_ID_HEX = "0x14a34"; // Base Sepolia = 84532
 const RPC_URL = "https://base-sepolia.g.alchemy.com/v2/9t2l29UXveRJxvspv3swk";
 
@@ -445,7 +445,9 @@ const ABI = [
   "function stickCount(uint256 tokenId) view returns (uint256)",
   "function editCredits(uint256 tokenId) view returns (uint8)",
   "function tokenURI(uint256 tokenId) view returns (string)",
-  "function price() view returns (uint256)",
+  "function tokensOfOwner(address owner) view returns (uint256[])",
+  "function tokenOfOwnerByIndex(address owner, uint256 index) view returns (uint256)",
+  "function balanceOf(address owner) view returns (uint256)",
   "function mintOpen() view returns (bool)",
   "function ownerOf(uint256 tokenId) view returns (address)",
   "event Minted(address indexed minter, uint256 indexed tokenId)",
@@ -835,46 +837,24 @@ async function loadMyNFTs(){
   if(!walletAddress) return;
   try {
     const contract=getContract();
-    const provider=getProvider();
-    const latest=await provider.getBlockNumber();
-    console.log('loadMyNFTs: latest block',latest);
+    console.log('loadMyNFTs: fetching tokens for',walletAddress);
 
-    // Query in small chunks of 2000 blocks to avoid 413
-    const CHUNK=2000;
-    const LOOKBACK=200000; // ~4 days on Base Sepolia
-    const from=Math.max(0, latest-LOOKBACK);
-    const filter=contract.filters.Minted(walletAddress);
-
-    let allEvents=[];
-    let chunksLoaded=0;
-    const totalChunks=Math.ceil(LOOKBACK/CHUNK);
-    for(let start=from; start<=latest; start+=CHUNK){
-      const end=Math.min(start+CHUNK-1, latest);
-      try{
-        const chunk=await contract.queryFilter(filter, start, end);
-        allEvents=allEvents.concat(chunk);
-        chunksLoaded++;
-        if(chunksLoaded%10===0){
-          console.log('loadMyNFTs: scanning…',Math.round(chunksLoaded/totalChunks*100)+'%');
-        }
-      }catch(e){ console.warn('chunk error',start,'-',end,e.message); }
-    }
-
-    console.log('loadMyNFTs: found',allEvents.length,'Minted events');
-    const ids=[...new Set(allEvents.map(e=>e.args.tokenId.toNumber()))];
-    console.log('loadMyNFTs: token ids',ids);
+    // Single call — no block scanning needed thanks to ERC721Enumerable
+    const ids=await contract.tokensOfOwner(walletAddress);
+    console.log('loadMyNFTs: token ids',ids.map(i=>i.toNumber()));
 
     const owned=[];
     for(const tokenId of ids){
       try{
-        const owner=await contract.ownerOf(tokenId);
-        if(owner.toLowerCase()===walletAddress.toLowerCase()){
-          const rawSticks=await contract.getSticks(tokenId);
-          const credits=await contract.editCredits(tokenId);
-          console.log('Token',tokenId,'→',rawSticks.length,'sticks, credits:',Number(credits));
-          owned.push({id:tokenId,sticks:rawSticks.map(formatStick),credits:Number(credits)});
-        }
-      }catch(e){ console.warn('Token',tokenId,'error:',e.message); }
+        const rawSticks=await contract.getSticks(tokenId.toNumber());
+        const credits=await contract.editCredits(tokenId.toNumber());
+        console.log('Token',tokenId.toNumber(),'→',rawSticks.length,'sticks, credits:',Number(credits));
+        owned.push({
+          id:      tokenId.toNumber(),
+          sticks:  rawSticks.map(formatStick),
+          credits: Number(credits)
+        });
+      }catch(e){ console.warn('Token',tokenId.toNumber(),'error:',e.message); }
     }
     owned.sort((a,b)=>a.id-b.id);
     myNFTData=owned;
