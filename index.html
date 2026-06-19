@@ -138,6 +138,7 @@ nav { border-bottom: 0.5px solid #eee; background: #fff; position: sticky; top: 
 .editor-canvas-area canvas { image-rendering: pixelated; border: 0.5px solid #ddd; border-radius: 6px; max-width: 100%; }
 .editor-hint { font-size: 12px; color: #999; }
 .editor-side { display: flex; flex-direction: column; gap: 10px; }
+#editor-stick-list { max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
 .editor-stick-card { border: 0.5px solid #eee; border-radius: 8px; padding: 10px 13px; cursor: pointer; }
 .editor-stick-card.active { border-width: 1.5px; }
 .stick-label { font-size: 10px; color: #999; letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 5px; }
@@ -657,12 +658,21 @@ function resetMint(){
   document.getElementById('mint-spinner').classList.remove('active');
   const cta=document.getElementById('mint-cta');
   if(cta){cta.disabled=false;cta.textContent='Mint a Stix';}
+  // Restore canvas (may have been replaced by <img> after reveal)
+  const mintVisual=document.querySelector('.mint-visual');
+  if(mintVisual){
+    mintVisual.innerHTML=
+      '<canvas id="mint-canvas" width="300" height="300"></canvas>'+
+      '<div class="mint-spinner-overlay" id="mint-spinner">'+
+        '<div class="mint-spinner-ring"></div>'+
+        '<div class="mint-spinner-text" id="mint-spinner-text">Requesting randomness…</div>'+
+      '</div>';
+  }
   const cv=document.getElementById('mint-canvas');
   if(cv){
     const ctx=cv.getContext('2d');
     const sc=cv.width/GRID;
     ctx.fillStyle='#f5f5f5';ctx.fillRect(0,0,cv.width,cv.height);
-    // Greyed-out preview sticks as decoration
     makeNFT(9).forEach(s=>{
       const h=Math.floor(s.length/2);
       for(let i=-h;i<=h;i++){
@@ -671,7 +681,6 @@ function resetMint(){
         pp(ctx,x,y,'#ddd',sc);
       }
     });
-    // "?" overlay
     ctx.fillStyle='rgba(245,245,245,0.6)';ctx.fillRect(0,0,cv.width,cv.height);
     ctx.fillStyle='#bbb';
     ctx.font='bold '+Math.round(cv.width*0.25)+'px sans-serif';
@@ -804,12 +813,15 @@ async function handleSave(){
     const tx=await contract.saveLayout(editorTokenId,chainSticks);
     btn.textContent='Saving on-chain…';
     await tx.wait(1);
-    editCredits--;
+    // Reload credits from chain (source of truth)
+    const readContract=getContract(false);
+    const newCredits=await readContract.editCredits(editorTokenId);
+    editCredits=Number(newCredits);
     layoutDirty=false;
     const nft=myNFTData.find(x=>x.id===editorTokenId);
     if(nft){nft.sticks=editorSticks.map(s=>({...s}));nft.credits=editCredits;}
     buildEditor();
-    toast('Layout saved on-chain · 1 credit used ✅');
+    toast('Layout saved on-chain · '+editCredits+' credit'+(editCredits!==1?'s':'')+' remaining ✅');
   } catch(e) {
     if(e.code===4001)toast('Transaction cancelled');
     else toast('Save failed: '+(e.reason||e.message||'unknown error'));
