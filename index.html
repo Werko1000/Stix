@@ -483,14 +483,17 @@ function getContract(withSigner=false) {
   return new ethers.Contract(CONTRACT_ADDRESS, ABI, getProvider());
 }
 
-// Convert on-chain stick tuple to our JS format (ethers v5 returns BigNumber for uint8!)
+// Convert on-chain stick tuple to our JS format
+// ethers.js v5 returns tuples as arrays [color, length, x, y, dir]
+// IMPORTANT: s.length = array length (5), NOT the stick length!
+// Always use numeric indices to avoid this ambiguity.
 function formatStick(s) {
   return {
-    color:  PALETTE[Number(s.color)] || PALETTE[0],
-    length: Number(s.length),
-    x:      Number(s.x),
-    y:      Number(s.y),
-    dir:    Number(s.dir)
+    color:  PALETTE[Number(s[0])] || PALETTE[0],
+    length: Number(s[1]),
+    x:      Number(s[2]),
+    y:      Number(s[3]),
+    dir:    Number(s[4])
   };
 }
 
@@ -1127,7 +1130,6 @@ function drawEditorCanvas(){
   const cv=document.getElementById('editor-canvas');
   if(!cv)return;
   const ctx=cv.getContext('2d');
-  console.log('drawEditor sticks:', editorSticks.map(s=>({len:s.length,type:typeof s.length,x:s.x,y:s.y,dir:s.dir})));
   drawNFT(ctx,editorSticks,EDITOR_SCALE);
   const s=editorSticks[selectedIdx];
   if(s){
