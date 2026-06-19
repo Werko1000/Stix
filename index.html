@@ -655,20 +655,29 @@ async function handleMint(){
     const receipt=await alchemyProvider.waitForTransaction(tx.hash, 1);
     stext.textContent='Waiting for Chainlink VRF…';
 
-    // Simple polling: check tokensOfOwner every 8s until a new token appears
+    // Snapshot which tokens we had BEFORE this mint
     const readContract=getContract(false);
     let found=false;
     let pollCount=0;
-    const knownIds=new Set(myNFTData.map(n=>n.id));
+
+    // Get current token list as baseline (fresh from chain)
+    let knownIds=new Set();
+    try{
+      const currentIds=await readContract.tokensOfOwner(walletAddress);
+      currentIds.forEach(id=>knownIds.add(id.toNumber()));
+      console.log('Mint polling: known ids before mint:', [...knownIds]);
+    }catch(e){ console.warn('baseline error:',e.message); }
 
     const pollTimer=setInterval(async()=>{
       pollCount++;
       stext.textContent='Waiting for Chainlink VRF… ('+Math.round(pollCount*8)+'s)';
       try {
         const ids=await readContract.tokensOfOwner(walletAddress);
+        console.log('Poll',pollCount,'- tokens:', ids.map(i=>i.toNumber()));
         for(const id of ids){
           const tokenId=id.toNumber();
           if(!knownIds.has(tokenId)&&!found){
+            console.log('New token found:', tokenId);
             found=true;
             clearInterval(pollTimer);
             if(revealTimer){clearTimeout(revealTimer);revealTimer=null;}
