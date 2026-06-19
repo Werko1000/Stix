@@ -459,23 +459,12 @@ function getProvider() {
   // Always use Alchemy for read calls — MetaMask's RPC is too limited
   return new ethers.providers.JsonRpcProvider(RPC_URL);
 }
-function getProviderWithSigner() {
-  const eth = getEthereum();
-  if (!eth) throw new Error('No wallet connected');
-  const web3provider = new ethers.providers.Web3Provider(eth);
-  return web3provider;
-}
 function getContract(withSigner=false) {
   if (withSigner) {
-    // Sign with Rabby but broadcast via Alchemy for reliable propagation
     const eth = getEthereum();
     if (!eth) throw new Error('No wallet connected');
     const web3provider = new ethers.providers.Web3Provider(eth);
-    const signer = web3provider.getSigner();
-    // Wrap: use Alchemy provider but inject Rabby signer
-    const alchemyProvider = getProvider();
-    const wrappedSigner = signer.connect(alchemyProvider);
-    return new ethers.Contract(CONTRACT_ADDRESS, ABI, wrappedSigner);
+    return new ethers.Contract(CONTRACT_ADDRESS, ABI, web3provider.getSigner());
   }
   return new ethers.Contract(CONTRACT_ADDRESS, ABI, getProvider());
 }
