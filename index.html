@@ -652,18 +652,20 @@ async function handleMint(){
       revealMintFromChain(tokenId.toNumber());
     });
 
-    // Strategy 2: poll totalMinted / ownerOf every 8 seconds
+    // Strategy 2: poll every 8 seconds up to latest block
     let pollCount=0;
     const knownIds=new Set(myNFTData.map(n=>n.id));
     const pollTimer=setInterval(async()=>{
       pollCount++;
       stext.textContent='Waiting for Chainlink VRF… ('+Math.round(pollCount*8)+'s)';
       try {
-        // scan recent Minted events for our wallet - only from mint block onwards
+        const provider2=getProvider();
+        const latest2=await provider2.getBlockNumber();
+        const chunkEnd=Math.min(receipt.blockNumber+2000, latest2);
         const events=await readContract.queryFilter(
           readContract.filters.Minted(walletAddress),
           receipt.blockNumber,
-          receipt.blockNumber+500
+          chunkEnd
         );
         for(const ev of events){
           const tokenId=ev.args.tokenId.toNumber();
@@ -676,7 +678,7 @@ async function handleMint(){
             return;
           }
         }
-      }catch(e){}
+      }catch(e){ console.warn('poll error:',e.message); }
     },8000);
 
     // Final timeout after 5 minutes
@@ -839,16 +841,22 @@ async function loadMyNFTs(){
 
     // Query in small chunks of 2000 blocks to avoid 413
     const CHUNK=2000;
-    const LOOKBACK=20000; // ~11 hours on Base Sepolia
+    const LOOKBACK=200000; // ~4 days on Base Sepolia
     const from=Math.max(0, latest-LOOKBACK);
     const filter=contract.filters.Minted(walletAddress);
 
     let allEvents=[];
+    let chunksLoaded=0;
+    const totalChunks=Math.ceil(LOOKBACK/CHUNK);
     for(let start=from; start<=latest; start+=CHUNK){
       const end=Math.min(start+CHUNK-1, latest);
       try{
         const chunk=await contract.queryFilter(filter, start, end);
         allEvents=allEvents.concat(chunk);
+        chunksLoaded++;
+        if(chunksLoaded%10===0){
+          console.log('loadMyNFTs: scanning…',Math.round(chunksLoaded/totalChunks*100)+'%');
+        }
       }catch(e){ console.warn('chunk error',start,'-',end,e.message); }
     }
 
