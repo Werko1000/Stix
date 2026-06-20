@@ -3,53 +3,78 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Stix – On-chain pixel art</title>
+<title>Pixl – On-chain pixel art</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%230a0a0a'/><line x1='20' y1='50' x2='80' y2='50' stroke='%23E63946' stroke-width='8' stroke-linecap='round'/><line x1='50' y1='20' x2='50' y2='80' stroke='%232A9D8F' stroke-width='8' stroke-linecap='round'/><rect x='60' y='35' width='12' height='12' fill='%23F4A261'/><rect x='60' y='50' width='12' height='12' fill='%23F4A261'/></svg>">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
+  /* Normies-inspired palette */
+  --normie-bg:    #6B8FA0;  /* steel blue-gray – hero/nav */
+  --normie-warm:  #D4B87A;  /* golden tan – accent */
+  --normie-lgray: #C8C8C8;  /* light gray */
+  --normie-mgray: #6B6B6B;  /* mid gray */
+  --normie-dark:  #252525;  /* near black outline */
+  --normie-lav:   #C4B5D0;  /* lavender */
+
+  /* UI tokens */
+  --bg:       #F8F6F2;      /* warm off-white page bg */
+  --bg2:      #F0EDE8;      /* card bg */
+  --bg3:      #E8E4DE;      /* hover */
+  --bg4:      #DDD8D0;      /* pressed */
+  --border:   #E0DBD4;      /* subtle border */
+  --border2:  #C8C2B8;      /* stronger border */
+  --text:     #252525;      /* primary text = normie outline */
+  --text2:    #6B6B6B;      /* secondary = mid gray */
+  --text3:    #A0988C;      /* tertiary */
+  --accent:   #6B8FA0;      /* steel blue = normie bg */
+  --accent2:  #D4B87A;      /* warm golden */
+  --accent3:  #C4B5D0;      /* lavender */
+
+  /* NFT palette (16 colors) */
   --c1:#E63946; --c2:#F4A261; --c3:#E9C46A; --c4:#2A9D8F;
   --c5:#264653; --c6:#A8DADC; --c7:#457B9D; --c8:#1D3557;
   --c9:#F1FAEE; --c10:#C8B6FF; --c11:#FF6B6B; --c12:#FFE66D;
   --c13:#6BCB77; --c14:#4D96FF; --c15:#FF6FC8; --c16:#111111;
-  --bg:#0a0a0a; --bg2:#141414; --bg3:#1e1e1e; --bg4:#2a2a2a;
-  --border:#2a2a2a; --border2:#333;
-  --text:#f0f0f0; --text2:#aaa; --text3:#666;
+
   --max: 860px;
 }
 html { scroll-behavior: smooth; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
 .wrap { max-width: var(--max); margin: 0 auto; padding: 0 20px; }
-nav { border-bottom: 0.5px solid var(--border); background: var(--bg); position: sticky; top: 0; z-index: 100; }
+nav { border-bottom: none; background: var(--normie-bg); position: sticky; top: 0; z-index: 100; }
 .nav-inner { max-width: var(--max); margin: 0 auto; padding: 0 20px; height: 56px; display: flex; align-items: center; justify-content: space-between; }
-.nav-logo { font-size: 22px; font-weight: 800; letter-spacing: -1.5px; cursor: pointer; }
-.logo-s{color:#E63946} .logo-t{color:#F4A261} .logo-i{color:#6BCB77} .logo-x{color:#4D96FF} .logo-dot{color:#C8B6FF}
+.nav-logo { font-size: 22px; font-weight: 800; letter-spacing: -1.5px; cursor: pointer; color: #fff; }
+.logo-s{color:#F0F0F0} .logo-t{color:#E8E0D0} .logo-i{color:#C4B5D0} .logo-x{color:#B5C4CC} .logo-dot{color:rgba(255,255,255,0.5)}
 .nav-links { display: flex; gap: 20px; align-items: center; }
-.nav-links a { font-size: 13px; color: var(--text3); text-decoration: none; cursor: pointer; transition: color 0.15s; }
-.nav-links a:hover { color: var(--text); }
-.nav-menu-btn { display: none; background: none; border: none; cursor: pointer; font-size: 22px; color: var(--text); padding: 4px; }
-.btn-wallet { font-size: 13px; font-weight: 600; padding: 7px 16px; border: 1.5px solid var(--border2); border-radius: 8px; background: var(--bg3); color: var(--text); cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
-.btn-wallet:hover { background: var(--bg4); border-color: #444; }
-.btn-wallet.connected { border-color: #6BCB77; color: #6BCB77; }
-.btn-wallet.connected:hover { background: rgba(107,203,119,0.1); }
+.nav-links a { font-size: 13px; color: rgba(255,255,255,0.65); text-decoration: none; cursor: pointer; transition: color 0.15s; font-weight: 500; }
+.nav-links a:hover { color: #fff; }
+.nav-menu-btn { display: none; background: none; border: none; cursor: pointer; font-size: 22px; color: #fff; padding: 4px; }
+.btn-wallet { font-size: 13px; font-weight: 600; padding: 7px 16px; border: 1.5px solid rgba(255,255,255,0.3); border-radius: 8px; background: rgba(255,255,255,0.15); color: #fff; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.btn-wallet:hover { background: rgba(255,255,255,0.25); }
+.btn-wallet.connected { border-color: rgba(255,255,255,0.7); }
+.btn-wallet.connected:hover { background: rgba(255,255,255,0.25); }
+.wallet-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.mobile-nav { display: none; background: #5A7A90; border-bottom: none; padding: 10px 20px; flex-direction: column; gap: 2px; }
+.mobile-nav a { font-size: 15px; color: rgba(255,255,255,0.7); padding: 10px 0; cursor: pointer; border-bottom: 0.5px solid rgba(255,255,255,0.15); }
+.mobile-nav.open { display: flex; }
 .wallet-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
 .mobile-nav { display: none; background: var(--bg2); border-bottom: 0.5px solid var(--border); padding: 10px 20px; flex-direction: column; gap: 2px; }
 .mobile-nav a { font-size: 15px; color: var(--text2); padding: 10px 0; cursor: pointer; border-bottom: 0.5px solid var(--border); }
 .mobile-nav.open { display: flex; }
 .page { display: none; }
 .page.active { display: block; }
-.hero { padding: 60px 0 48px; border-bottom: 0.5px solid var(--border); }
+.hero { padding: 60px 0 48px; border-bottom: 0.5px solid var(--border); background: var(--normie-bg); }
 .hero-inner { max-width: var(--max); margin: 0 auto; padding: 0 20px; }
-.hero-eyebrow { font-size: 11px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--text3); margin-bottom: 20px; }
-.hero-title { font-size: clamp(34px, 7vw, 58px); font-weight: 800; letter-spacing: -2px; line-height: 1.03; color: var(--text); margin-bottom: 18px; }
+.hero-eyebrow { font-size: 11px; letter-spacing: 2.5px; text-transform: uppercase; color: rgba(255,255,255,0.5); margin-bottom: 20px; }
+.hero-title { font-size: clamp(34px, 7vw, 58px); font-weight: 800; letter-spacing: -2px; line-height: 1.03; color: #fff; margin-bottom: 18px; }
 .hero-title em { font-style: normal; transition: color 0.6s; }
-.hero-sub { font-size: clamp(15px, 2vw, 17px); color: var(--text2); line-height: 1.75; max-width: 500px; margin-bottom: 10px; }
-.hero-sub2 { font-size: 14px; color: var(--text3); line-height: 1.7; max-width: 480px; margin-bottom: 36px; }
+.hero-sub { font-size: clamp(15px, 2vw, 17px); color: rgba(255,255,255,0.75); line-height: 1.75; max-width: 500px; margin-bottom: 10px; }
+.hero-sub2 { font-size: 14px; color: rgba(255,255,255,0.5); line-height: 1.7; max-width: 480px; margin-bottom: 36px; }
 .hero-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 44px; }
-.btn-primary { font-size: 14px; font-weight: 600; padding: 12px 26px; background: linear-gradient(135deg,#E63946,#FF6FC8); color: #fff; border: none; border-radius: 8px; cursor: pointer; transition: all 0.15s; box-shadow: 0 4px 20px rgba(230,57,70,0.4); }
+.btn-primary { font-size: 14px; font-weight: 600; padding: 12px 26px; background: var(--accent); color: #fff; border: none; border-radius: 8px; cursor: pointer; transition: all 0.15s; box-shadow: 0 4px 16px rgba(107,143,160,0.4); }
 .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
-.btn-outline { font-size: 14px; font-weight: 500; padding: 12px 26px; border: 1.5px solid var(--border2); border-radius: 8px; background: var(--bg3); color: var(--text); cursor: pointer; transition: all 0.15s; }
-.btn-outline:hover { background: var(--bg4); border-color: #555; }
+.btn-outline { font-size: 14px; font-weight: 500; padding: 12px 26px; border: 1.5px solid var(--border2); border-radius: 8px; background: #fff; color: var(--text); cursor: pointer; transition: all 0.15s; }
+.btn-outline:hover { background: var(--bg2); }
 .hero-ticker { display: flex; gap: 8px; overflow: hidden; }
 .hero-ticker canvas { flex-shrink: 0; image-rendering: pixelated; border: 0.5px solid var(--border2); border-radius: 6px; }
 .stats-bar { border-bottom: 0.5px solid var(--border); }
@@ -147,9 +172,9 @@ nav { border-bottom: 0.5px solid var(--border); background: var(--bg); position:
 .rot-btn { flex: 1; padding: 6px 4px; font-size: 11px; border-radius: 8px; border: 1.5px solid var(--border2); background: var(--bg3); cursor: pointer; text-align: center; font-weight: 600; color: var(--text3); transition: all 0.12s; }
 .rot-btn.active { border-color: #2A9D8F; background: linear-gradient(135deg,#2A9D8F,#4D96FF); color: #fff; box-shadow: 0 3px 10px rgba(42,157,143,0.3); }
 .editor-section { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text3); margin-bottom: 6px; margin-top: 2px; }
-.save-btn { width:100%; padding:12px; border-radius:12px; border:none; background:linear-gradient(135deg,#E63946,#F4A261); color:#fff; font-size:13px; font-weight:700; cursor:pointer; letter-spacing:0.3px; transition:all 0.15s; box-shadow:0 4px 16px rgba(230,57,70,0.35); }
+.save-btn { width:100%; padding:12px; border-radius:12px; border:none; background: var(--accent); color:#fff; font-size:13px; font-weight:700; cursor:pointer; letter-spacing:0.3px; transition:all 0.15s; box-shadow:0 4px 16px rgba(107,143,160,0.4); }
 .save-btn:hover { opacity:0.88; transform:translateY(-1px); }
-.save-btn:disabled { background:var(--bg3); color:var(--text3); box-shadow:none; cursor:not-allowed; transform:none; }
+.save-btn:disabled { background:var(--border); color:var(--text3); box-shadow:none; cursor:not-allowed; transform:none; }
 .burn-card { background:rgba(230,57,70,0.08); border:1px solid rgba(230,57,70,0.2); border-radius:12px; padding:14px; }
 .burn-card h4 { font-size:13px; color:#E63946; margin-bottom:5px; }
 .burn-card p { font-size:11px; color:var(--text2); line-height:1.5; margin-bottom:10px; }
@@ -443,10 +468,10 @@ footer { border-top: 0.5px solid #eee; }
     <div class="hero-inner">
       <div class="hero-eyebrow">On-chain generative art &middot; Base</div>
       <div class="hero-title">Sticks &amp; Tetrix.<br>Infinite <em id="hero-word" style="color:var(--c1)">creativity.</em></div>
-      <div class="hero-sub">Each Stix is a 24×24 pixel canvas with random lines and Tetromino blocks — stored entirely on Base, rendered from the contract, owned by you.</div>
+      <div class="hero-sub">Each Pixl is a 24×24 pixel canvas with random lines and Tetromino blocks — stored entirely on Base, rendered from the contract, owned by you.</div>
       <div class="hero-sub2">Burn to merge. Edit to arrange. No servers. No IPFS. 100% on-chain.</div>
       <div class="hero-actions">
-        <button class="btn-primary" onclick="showPage('mint')">Mint a Stix</button>
+        <button class="btn-primary" onclick="showPage('mint')">Mint a Pixl</button>
         <button class="btn-outline" onclick="showPage('gallery')">Browse collection</button>
       </div>
       <div class="hero-ticker" id="hero-ticker"></div>
@@ -464,9 +489,9 @@ footer { border-top: 0.5px solid #eee; }
     <div class="manifesto-inner">
       <div>
         <h2>Art that lives<br>on the chain.</h2>
-        <p>Most NFT projects store their images on IPFS or a centralized server. If the team disappears, the art disappears. Stix is different.</p>
+        <p>Most NFT projects store their images on IPFS or a centralized server. If the team disappears, the art disappears. Pixl is different.</p>
         <p>Every pixel, every color, every stick position is encoded directly into the smart contract on Base. The SVG is generated on-chain, on demand, every time. There is no image to host. There is nothing to lose.</p>
-        <p>When you burn two Stix together, you get all six sticks in one canvas &mdash; yours to arrange however you like. Keep burning, keep building. The chain remembers everything.</p>
+        <p>When you burn two Pixl together, you get all elements in one canvas &mdash; yours to arrange however you like. Keep burning, keep building. The chain remembers everything.</p>
       </div>
       <div class="manifesto-right">
         <div class="manifesto-fact">
@@ -477,7 +502,7 @@ footer { border-top: 0.5px solid #eee; }
         <div class="manifesto-fact">
           <div class="fact-label">Licence</div>
           <div class="fact-val">CC0 &mdash; public domain</div>
-          <div class="fact-desc">The art, the contracts, the code &mdash; all belong to everyone. Build on Stix freely.</div>
+          <div class="fact-desc">The art, the contracts, the code &mdash; all belong to everyone. Build on Pixl freely.</div>
         </div>
         <div class="manifesto-fact">
           <div class="fact-label">Blockchain</div>
@@ -495,13 +520,13 @@ footer { border-top: 0.5px solid #eee; }
           <div class="how-accent" style="background:#fff0f0; border:2px solid var(--c1);"></div>
           <div class="how-step-num">01 &mdash; Mint</div>
           <h3>You get sticks + tetrominos.</h3>
-          <p>Each Stix is minted with three randomly generated pixel lines &mdash; a color from the 16-color palette, a length between 5 and 15 pixels, and one of four directions.</p>
+          <p>Each Pixl is minted with three randomly generated pixel lines &mdash; a color from the 16-color palette, a length between 5 and 15 pixels, and one of four directions.</p>
         </div>
         <div class="how-step">
           <div class="how-accent" style="background:#fff8ee; border:2px solid var(--c2);"></div>
           <div class="how-step-num">02 &mdash; Burn</div>
           <h3>Burn two, get one.</h3>
-          <p>Sacrifice two Stix and receive a single new one carrying all six sticks. Burn again. Stack more. The more you burn, the richer your canvas becomes.</p>
+          <p>Sacrifice two Pixl and receive a single new one carrying all elements. Burn again. Stack more. The more you burn, the richer your canvas becomes.</p>
         </div>
         <div class="how-step">
           <div class="how-accent" style="background:#edfaf5; border:2px solid var(--c4);"></div>
@@ -515,7 +540,7 @@ footer { border-top: 0.5px solid #eee; }
   <div class="section">
     <div class="section-inner">
       <div class="section-label">What you can build</div>
-      <p style="font-size:14px;color:#666;line-height:1.7;margin-bottom:24px;max-width:480px;">Burn enough Stix and the sticks start to add up. Here's what collectors have composed on a single 50×50 canvas.</p>
+      <p style="font-size:14px;color:#666;line-height:1.7;margin-bottom:24px;max-width:480px;">Burn enough Pixl and the sticks start to add up. Here's what collectors have composed on a single 50×50 canvas.</p>
       <div class="nft-grid" id="home-gallery"></div>
     </div>
   </div>
@@ -540,7 +565,7 @@ footer { border-top: 0.5px solid #eee; }
 <div id="page-mint" class="page">
   <div class="section">
     <div class="section-inner">
-      <div class="section-label">Mint a Stix</div>
+      <div class="section-label">Mint a Pixl</div>
       <div class="mint-stage">
         <div class="mint-visual">
           <canvas id="mint-canvas" width="300" height="300"></canvas>
@@ -552,7 +577,7 @@ footer { border-top: 0.5px solid #eee; }
         <div class="mint-info">
           <div id="mint-state-idle">
             <h3>Mint is a surprise.</h3>
-            <p class="mint-desc">You can't pick your sticks. Each Stix gets three lines generated from on-chain Chainlink randomness at the moment you mint — unmanipulable, unknowable in advance, revealed right here once it lands.</p>
+            <p class="mint-desc">You can't pick your sticks. Each Pixl gets three lines generated from on-chain Chainlink randomness at the moment you mint — unmanipulable, unknowable in advance, revealed right here once it lands.</p>
             <div class="mint-rows">
               <div class="mint-row"><span class="lbl">Sticks</span><span class="val">3–6 (random)</span></div>
               <div class="mint-row"><span class="lbl">Canvas</span><span class="val">50 &times; 50 px</span></div>
@@ -560,11 +585,11 @@ footer { border-top: 0.5px solid #eee; }
               <div class="mint-row"><span class="lbl">Network</span><span class="val">Base</span></div>
               <div class="mint-row" style="border:none"><span class="lbl">Price</span><span class="val mint-price-display">TBD</span></div>
             </div>
-            <button class="mint-cta" id="mint-cta" onclick="handleMint()">Mint a Stix</button>
+            <button class="mint-cta" id="mint-cta" onclick="handleMint()">Mint a Pixl</button>
           </div>
           <div id="mint-state-revealed" style="display:none;">
-            <h3 id="reveal-title">Meet Stix #—</h3>
-            <p class="mint-desc">Minted and stored on-chain. Sticks and Tetrominos — burn another Stix to unlock edits.</p>
+            <h3 id="reveal-title">Meet Pixl #—</h3>
+            <p class="mint-desc">Minted and stored on-chain. Sticks and Tetrominos — burn another Pixl to unlock edits.</p>
             <div id="reveal-stick-list"></div>
             <div style="display:flex; gap:8px; margin-top:8px;">
               <button class="mint-cta" style="flex:1;" onclick="showPage('mynfts')">View in My NFTs</button>
@@ -590,7 +615,7 @@ footer { border-top: 0.5px solid #eee; }
   <div class="section">
     <div class="section-inner">
       <div class="section-label">Burn &amp; merge</div>
-      <p style="font-size:14px;color:#666;line-height:1.7;margin-bottom:24px;max-width:520px;">Pick the Stix you want to <b>keep</b> and the one you want to <b>burn</b>. The burned Stix's sticks move into the keeper, and the keeper unlocks one edit. The burned token is gone forever.</p>
+      <p style="font-size:14px;color:#666;line-height:1.7;margin-bottom:24px;max-width:520px;">Pick the Pixl you want to <b>keep</b> and the one you want to <b>burn</b>. The burned Pixl's sticks move into the keeper, and the keeper unlocks one edit. The burned token is gone forever.</p>
       <div id="burn-content"></div>
     </div>
   </div>
@@ -633,7 +658,7 @@ footer { border-top: 0.5px solid #eee; }
           <div id="editor-controls"></div>
           <button class="save-btn" id="save-btn" onclick="handleSave()">Save layout on-chain</button>
           <div style="margin-top:2px;">
-            <div class="stick-label" style="margin-bottom:6px;">Name your Stix</div>
+            <div class="stick-label" style="margin-bottom:6px;">Name your Pixl</div>
             <div style="display:flex;gap:6px;">
               <input id="name-input" type="text" maxlength="32" placeholder="Untitled"
                 style="flex:1;font-size:12px;padding:7px 10px;border:1.5px solid #eee;border-radius:6px;outline:none;font-family:inherit;">
@@ -642,7 +667,7 @@ footer { border-top: 0.5px solid #eee; }
           </div>
           <div class="burn-card">
             <h4>Burn &amp; merge</h4>
-            <p>Burn another Stix to absorb its elements &mdash; and unlock one new edit.</p>
+            <p>Burn another Pixl to absorb its elements &mdash; and unlock one new edit.</p>
             <button class="burn-btn" onclick="showPage('burn')">Go to Burn &amp; merge</button>
           </div>
         </div>
@@ -665,7 +690,8 @@ footer { border-top: 0.5px solid #eee; }
 
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 <script>
-const PALETTE=["#E63946","#F4A261","#E9C46A","#2A9D8F","#264653","#A8DADC","#457B9D","#1D3557","#F1FAEE","#C8B6FF","#FF6B6B","#FFE66D","#6BCB77","#4D96FF","#FF6FC8","#111111"];
+// NPC-inspired palette: skin tones, grays, muted accents
+const PALETTE=['#252525','#6B6B6B','#C8C8C8','#F0F0F0','#D4B87A','#BEA865','#C4B5D0','#9080A0','#4A6B80','#B5C4CC','#8A7060','#E8E0D0','#1C1C1C','#A0A0A0','#D0C0A8','#5A7A90'];
 const DIR_NAMES=["--","|","↘","↗"];
 const GRID=24;
 
@@ -753,7 +779,7 @@ async function fetchTokenImage(tokenId){
 function makeOnchainImg(tokenId, size){
   const img=document.createElement('img');
   img.style.cssText='width:100%;display:block;border-radius:0;';
-  img.alt='Stix #'+tokenId;
+  img.alt='Pixl #'+tokenId;
   // grey placeholder
   img.src='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50"><rect width="50" height="50" fill="%23f5f5f5"/></svg>';
   fetchTokenImage(tokenId).then(src=>{ if(src) img.src=src; });
@@ -795,7 +821,7 @@ function getTetroPixels(blockType,rotation,ox,oy){
 }
 
 function drawNFT(ctx,sticks,scale,blocks){
-  ctx.fillStyle='#0a0a0a';ctx.fillRect(0,0,GRID*scale,GRID*scale);
+  ctx.fillStyle='#6B8FA0';ctx.fillRect(0,0,GRID*scale,GRID*scale);
   // Draw sticks (H/V only)
   sticks.forEach(s=>{
     const h=Math.floor(Number(s.length)/2);
@@ -920,7 +946,7 @@ function resetMint(){
   document.getElementById('mint-state-revealed').style.display='none';
   document.getElementById('mint-spinner').classList.remove('active');
   const cta=document.getElementById('mint-cta');
-  if(cta){cta.disabled=false;cta.textContent='Mint a Stix';}
+  if(cta){cta.disabled=false;cta.textContent='Mint a Pixl';}
   // Restore canvas (may have been replaced by <img> after reveal)
   const mintVisual=document.querySelector('.mint-visual');
   if(mintVisual){
@@ -1007,7 +1033,7 @@ async function handleMint(){
       found=true;
       clearInterval(pollTimer);
       spinner.classList.remove('active');
-      cta.disabled=false; cta.textContent='Mint a Stix';
+      cta.disabled=false; cta.textContent='Mint a Pixl';
       toast('VRF is still processing — open My NFTs in a minute to see your token');
       // Show a helpful message in the mint state
       const stext2=document.getElementById('mint-spinner-text');
@@ -1016,7 +1042,7 @@ async function handleMint(){
 
   } catch(e) {
     spinner.classList.remove('active');
-    cta.disabled=false; cta.textContent='Mint a Stix';
+    cta.disabled=false; cta.textContent='Mint a Pixl';
     if(e.code===4001)toast('Transaction cancelled');
     else toast('Mint failed: '+(e.reason||e.message||'unknown error'));
   }
@@ -1040,7 +1066,7 @@ async function revealMintFromChain(tokenId){
     if(mintVisual){
       const img=document.createElement('img');
       img.style.cssText='width:300px;height:300px;display:block;border:0.5px solid #eee;border-radius:12px;';
-      img.alt='Stix #'+tokenId;
+      img.alt='Pixl #'+tokenId;
       img.classList.add('reveal-pop');
       mintVisual.innerHTML='';
       mintVisual.appendChild(img);
@@ -1049,11 +1075,11 @@ async function revealMintFromChain(tokenId){
 
     document.getElementById('mint-state-idle').style.display='none';
     document.getElementById('mint-state-revealed').style.display='';
-    document.getElementById('reveal-title').textContent='Meet Stix #'+tokenId;
+    document.getElementById('reveal-title').textContent='Meet Pixl #'+tokenId;
 
     // Update description
     const desc=document.querySelector('#mint-state-revealed .mint-desc');
-    if(desc) desc.textContent='Minted on-chain! '+sticks.length+' sticks and '+blocks.length+' tetromino'+(blocks.length!==1?'s':'')+' — burn another Stix to unlock edits.';
+    if(desc) desc.textContent='Minted on-chain! '+sticks.length+' sticks and '+blocks.length+' tetromino'+(blocks.length!==1?'s':'')+' — burn another Pixl to unlock edits.';
 
     // Build element list
     const list=document.getElementById('reveal-stick-list');
@@ -1082,9 +1108,9 @@ async function revealMintFromChain(tokenId){
       list.appendChild(d);
     });
 
-    toast('Minted · Stix #'+tokenId+' 🎉');
+    toast('Minted · Pixl #'+tokenId+' 🎉');
     const cta=document.getElementById('mint-cta');
-    if(cta){cta.disabled=false;cta.textContent='Mint a Stix';}
+    if(cta){cta.disabled=false;cta.textContent='Mint a Pixl';}
   } catch(e) {
     toast('Error loading minted token: '+e.message);
   }
@@ -1092,7 +1118,7 @@ async function revealMintFromChain(tokenId){
 
 async function handleSave(){
   if(!walletAddress){toast('Connect your wallet first');return;}
-  if(editCredits<=0){toast('No edit credits. Burn a Stix first.');return;}
+  if(editCredits<=0){toast('No edit credits. Burn a Pixl first.');return;}
   if(!layoutDirty){toast('Move at least one stick before saving');return;}
   const btn=document.getElementById('save-btn');
   btn.disabled=true; btn.textContent='Confirm in wallet…';
@@ -1339,16 +1365,16 @@ function getStage(n){
 async function buildMyNFTs(){
   const wrap=document.getElementById('mynft-content');
   if(!walletAddress){
-    wrap.innerHTML='<div class="connect-prompt"><h2>Your collection awaits.</h2><p>Connect your wallet to see the Stix you own.</p><button class="btn-primary" onclick="handleWalletClick()">Connect wallet</button></div>';
+    wrap.innerHTML='<div class="connect-prompt"><h2>Your collection awaits.</h2><p>Connect your wallet to see the Pixl you own.</p><button class="btn-primary" onclick="handleWalletClick()">Connect wallet</button></div>';
     return;
   }
-  wrap.innerHTML='<div style="text-align:center;padding:40px;color:#999;font-size:13px;">Loading your Stix from Base Sepolia…</div>';
+  wrap.innerHTML='<div style="text-align:center;padding:40px;color:#999;font-size:13px;">Loading your Pixl from Base Sepolia…</div>';
   await loadMyNFTs();
   if(myNFTData.length===0){
-    wrap.innerHTML='<div class="connect-prompt"><h2>No Stix yet.</h2><p>Mint your first Stix to start your collection.</p><button class="btn-primary" onclick="showPage(\'mint\')">Mint a Stix</button></div>';
+    wrap.innerHTML='<div class="connect-prompt"><h2>No Pixl yet.</h2><p>Mint your first Pixl to start your collection.</p><button class="btn-primary" onclick="showPage(\'mint\')">Mint a Pixl</button></div>';
     return;
   }
-  wrap.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;"><p style="font-size:13px;color:#666;">'+myNFTData.length+' Stix in your wallet</p><button class="btn-outline" style="font-size:13px;padding:8px 18px;" onclick="showPage(\'burn\')">Burn &amp; merge →</button></div><div class="mynft-grid" id="mynft-grid"></div>';
+  wrap.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;"><p style="font-size:13px;color:#666;">'+myNFTData.length+' Pixl in your wallet</p><button class="btn-outline" style="font-size:13px;padding:8px 18px;" onclick="showPage(\'burn\')">Burn &amp; merge →</button></div><div class="mynft-grid" id="mynft-grid"></div>';
   const grid=document.getElementById('mynft-grid');
   const acc=["#E63946","#2A9D8F","#C8B6FF","#F4A261"];
   myNFTData.forEach((item,i)=>{
@@ -1367,8 +1393,8 @@ async function buildMyNFTs(){
 let burnKeepId=null, burnBurnId=null;
 function buildBurn(){
   const wrap=document.getElementById('burn-content');
-  if(!walletAddress){wrap.innerHTML='<div class="connect-prompt"><h2>Connect to burn.</h2><p>Connect your wallet to choose which Stix to keep and which to burn.</p><button class="btn-primary" onclick="handleWalletClick()">Connect wallet</button></div>';return;}
-  if(myNFTData.length<2){wrap.innerHTML='<div class="connect-prompt"><h2>You need at least two Stix.</h2><p>Burning merges one Stix into another, so you need two or more. Mint a few first.</p><button class="btn-primary" onclick="showPage(\'mint\')">Mint a Stix</button></div>';return;}
+  if(!walletAddress){wrap.innerHTML='<div class="connect-prompt"><h2>Connect to burn.</h2><p>Connect your wallet to choose which Pixl to keep and which to burn.</p><button class="btn-primary" onclick="handleWalletClick()">Connect wallet</button></div>';return;}
+  if(myNFTData.length<2){wrap.innerHTML='<div class="connect-prompt"><h2>You need at least two Pixl.</h2><p>Burning merges one Pixl into another, so you need two or more. Mint a few first.</p><button class="btn-primary" onclick="showPage(\'mint\')">Mint a Pixl</button></div>';return;}
   wrap.innerHTML=
     '<div class="burn-select-grid">'+
       '<div class="burn-col keep"><h4>Keep this one</h4><div class="burn-col-sub">Gains the sticks + 1 edit</div><div class="burn-pick-grid" id="keep-grid"></div></div>'+
@@ -1421,7 +1447,7 @@ function renderBurnConfirm(){
   const keep=myNFTData.find(x=>x.id===burnKeepId);
   const burn=myNFTData.find(x=>x.id===burnBurnId);
   const merged=keep.sticks.concat(burn.sticks);
-  area.innerHTML='<div class="burn-confirm"><canvas class="burn-preview-canvas" id="burn-preview" width="150" height="150"></canvas><div class="burn-confirm-text"><h4>Stix #'+keep.id+' will hold '+merged.length+' sticks</h4><p>Burning #'+burn.id+' moves its '+burn.sticks.length+' sticks into #'+keep.id+' and unlocks one edit. #'+burn.id+' is destroyed permanently.</p><button class="burn-go" onclick="confirmBurn()">Burn #'+burn.id+' → keep #'+keep.id+'</button></div></div>';
+  area.innerHTML='<div class="burn-confirm"><canvas class="burn-preview-canvas" id="burn-preview" width="150" height="150"></canvas><div class="burn-confirm-text"><h4>Pixl #'+keep.id+' will hold '+merged.length+' sticks</h4><p>Burning #'+burn.id+' moves its '+burn.sticks.length+' sticks into #'+keep.id+' and unlocks one edit. #'+burn.id+' is destroyed permanently.</p><button class="burn-go" onclick="confirmBurn()">Burn #'+burn.id+' → keep #'+keep.id+'</button></div></div>';
   const cv=document.getElementById('burn-preview');
   drawNFT(cv.getContext('2d'),merged,150/GRID);
 }
@@ -1445,7 +1471,7 @@ async function confirmBurn(){
     myNFTData=myNFTData.filter(x=>x.id!==burnBurnId);
     const keptId=keep.id;
     burnKeepId=null;burnBurnId=null;
-    toast('Burned #'+burn.id+' · Stix #'+keptId+' now has '+keep.sticks.length+' sticks + 1 edit ✅');
+    toast('Burned #'+burn.id+' · Pixl #'+keptId+' now has '+keep.sticks.length+' sticks + 1 edit ✅');
     buildBurn();
     // Show in-page success banner with edit button
     setTimeout(()=>{
@@ -1453,7 +1479,7 @@ async function confirmBurn(){
       if(wrap){
         const banner=document.createElement('div');
         banner.style.cssText='background:#edfaf5;border:0.5px solid #b8e6d6;border-radius:10px;padding:20px 24px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;';
-        banner.innerHTML='<div><div style="font-size:15px;font-weight:500;color:#2A9D8F;margin-bottom:4px;">Merge complete! 🎉</div><div style="font-size:13px;color:#555;">Stix #'+keptId+' now has '+keep.sticks.length+' sticks and 1 edit credit.</div></div><button onclick="openEditor('+keptId+')" style="padding:10px 20px;background:#111;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;">Edit now →</button>';
+        banner.innerHTML='<div><div style="font-size:15px;font-weight:500;color:#2A9D8F;margin-bottom:4px;">Merge complete! 🎉</div><div style="font-size:13px;color:#555;">Pixl #'+keptId+' now has '+keep.sticks.length+' sticks and 1 edit credit.</div></div><button onclick="openEditor('+keptId+')" style="padding:10px 20px;background:#111;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;">Edit now →</button>';
         wrap.prepend(banner);
       }
     },400);
@@ -1502,7 +1528,7 @@ function renderEditStatus(){
     el.innerHTML='<span class="credit-num">'+editCredits+'</span><span class="credit-text"><b>edit '+(editCredits===1?'credit':'credits')+' available.</b> Rearrange your sticks, then save once. Saving uses one credit.</span>';
   }else{
     el.className='edit-status no-credit';
-    el.innerHTML='<span class="credit-num">0</span><span class="credit-text">No edit credits. This layout is locked. Burn another Stix to unlock one edit.</span>';
+    el.innerHTML='<span class="credit-num">0</span><span class="credit-text">No edit credits. This layout is locked. Burn another Pixl to unlock one edit.</span>';
   }
 }
 
@@ -1548,13 +1574,13 @@ function stickHitTest(px,py){
 
 function buildEditor(){
   const titleLbl=document.getElementById('editor-title-label');
-  if(titleLbl)titleLbl.textContent='Editor — Stix #'+editorTokenId;
+  if(titleLbl)titleLbl.textContent='Editor — Pixl #'+editorTokenId;
   drawEditorCanvas();
   renderEditStatus();
   updateSaveButton();
   const locked = editCredits<=0;
   const hint=document.getElementById('editor-hint');
-  if(hint)hint.textContent = locked ? 'Layout locked — burn a Stix to unlock one edit' : 'Drag a stick to move it · tap to select';
+  if(hint)hint.textContent = locked ? 'Layout locked — burn a Pixl to unlock one edit' : 'Drag a stick to move it · tap to select';
   const list=document.getElementById('editor-stick-list');
   if(!list)return;
   list.innerHTML='';
