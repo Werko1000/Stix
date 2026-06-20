@@ -229,9 +229,23 @@ nav { border-bottom:0.5px solid rgba(255,255,255,0.1); background:#6B8FA0; posit
 .evo-bar { width:100%; height:2px; border-radius:1px; margin-top:6px; }
 .evo-label { font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text3); margin-bottom:16px; }
 .mynft-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
-.mynft-card { border:0.5px solid var(--border2); border-radius:10px; overflow:hidden; cursor:pointer; transition:all 0.15s; background:var(--bg2); }
+.mynft-card { border:0.5px solid var(--border2); border-radius:10px; overflow:hidden; cursor:pointer; transition:all 0.15s; background:var(--bg2); position:relative; }
 .mynft-card:hover { border-color:var(--border3); transform:translateY(-2px); }
+.mynft-card.editable { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }
 .mynft-card canvas { display:block; width:100%; image-rendering:pixelated; }
+.edit-badge { position:absolute; top:8px; right:8px; background:var(--accent); color:#fff; font-size:9px; font-weight:700; padding:3px 7px; border-radius:20px; letter-spacing:0.5px; text-transform:uppercase; }
+.mynft-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--border); border-radius:8px; overflow:hidden; margin-bottom:20px; }
+.mynft-stat { background:var(--bg2); padding:14px 16px; }
+.mynft-stat-val { font-size:20px; font-weight:800; letter-spacing:-0.5px; color:var(--accent); }
+.mynft-stat-lbl { font-size:10px; color:var(--text3); margin-top:2px; letter-spacing:0.5px; text-transform:uppercase; }
+.history-wrap { margin-top:28px; border-top:0.5px solid var(--border); padding-top:20px; }
+.history-label { font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--text3); margin-bottom:12px; }
+.history-list { display:flex; flex-direction:column; gap:6px; }
+.history-item { display:flex; align-items:center; gap:12px; padding:10px 14px; background:var(--bg2); border:0.5px solid var(--border); border-radius:6px; }
+.history-icon { font-size:16px; flex-shrink:0; width:24px; text-align:center; }
+.history-text { font-size:12px; color:var(--text2); flex:1; line-height:1.5; }
+.history-text strong { color:var(--text); font-weight:600; }
+.history-time { font-size:10px; color:var(--text3); white-space:nowrap; }
 .mynft-footer { padding:10px 12px; display:flex; justify-content:space-between; align-items:center; }
 .mynft-info h4 { font-size:13px; font-weight:600; }
 .mynft-info span { font-size:11px; color:var(--text3); }
@@ -598,6 +612,8 @@ const ABI = [
   "function tokenURI(uint256 tokenId) view returns (string)",
   "function tokensOfOwner(address owner) view returns (uint256[])",
   "function balanceOf(address owner) view returns (uint256)",
+  "function totalMinted() view returns (uint256)",
+  "function totalSupply() view returns (uint256)",
   "function mintOpen() view returns (bool)",
   "function price() view returns (uint256)",
   "function ownerOf(uint256 tokenId) view returns (address)",
@@ -1037,6 +1053,7 @@ async function revealMintFromChain(tokenId){
     });
 
     toast('Minted · Pixl #'+tokenId+' 🎉');
+    addHistory('🎲','Minted <strong>Pixl #'+tokenId+'</strong> — '+sticks.length+' sticks + '+blocks.length+' blocks');
     const cta=document.getElementById('mint-cta');
     if(cta){cta.disabled=false;cta.textContent='Mint a Pixl';}
   } catch(e) {
@@ -1066,6 +1083,7 @@ async function handleSave(){
     if(nft){nft.sticks=editorSticks.map(s=>({...s}));nft.credits=editCredits;}
     buildEditor();
     toast('Layout saved on-chain · '+editCredits+' credit'+(editCredits!==1?'s':'')+' remaining ✅');
+    addHistory('✏️','Saved layout for <strong>Pixl #'+editorTokenId+'</strong> on-chain');
   } catch(e) {
     if(e.code===4001)toast('Transaction cancelled');
     else toast('Save failed: '+(e.reason||e.message||'unknown error'));
@@ -1631,23 +1649,99 @@ async function buildMyNFTs(){
   }
   wrap.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3);font-size:13px;">Loading your Pixl from Base Sepolia…</div>';
   await loadMyNFTs();
+
+  // Fetch chain stats
+  let totalMinted=0,totalSupply=0,totalBurned=0;
+  try{
+    const c=getContract();
+    totalMinted=Number(await c.totalMinted());
+    totalSupply=Number(await c.totalSupply());
+    totalBurned=totalMinted-totalSupply;
+  }catch(e){}
+
   if(myNFTData.length===0){
     wrap.innerHTML='<div class="connect-prompt"><h2>No Pixl yet.</h2><p>Mint your first Pixl to start your collection.</p><button class="btn-primary" onclick="showPage(\'mint\')">Mint a Pixl</button></div>';
     return;
   }
-  wrap.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;"><p style="font-size:13px;color:var(--text2);">'+myNFTData.length+' Pixl in your wallet</p><button class="btn-outline" style="font-size:13px;padding:8px 18px;" onclick="showPage(\'burn\')">Burn &amp; merge →</button></div><div class="mynft-grid" id="mynft-grid"></div>';
+
+  const editable=myNFTData.filter(x=>x.credits>0);
+  const totalElements=myNFTData.reduce((s,x)=>(x.sticks.length||0)+(x.blocks||[]).length+s,0);
+
+  wrap.innerHTML=
+    // Stats bar
+    '<div class="mynft-stats">'+
+      '<div class="mynft-stat"><div class="mynft-stat-val">'+myNFTData.length+'</div><div class="mynft-stat-lbl">Owned</div></div>'+
+      '<div class="mynft-stat"><div class="mynft-stat-val">'+editable.length+'</div><div class="mynft-stat-lbl">Editable</div></div>'+
+      '<div class="mynft-stat"><div class="mynft-stat-val">'+totalElements+'</div><div class="mynft-stat-lbl">Elements</div></div>'+
+      '<div class="mynft-stat"><div class="mynft-stat-val">'+totalBurned+'</div><div class="mynft-stat-lbl">Burned Total</div></div>'+
+    '</div>'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">'+
+      '<p style="font-size:13px;color:var(--text2);">'+myNFTData.length+' Pixl · '+editable.length+' editable</p>'+
+      '<button class="btn-outline" style="font-size:13px;padding:7px 16px;" onclick="showPage(\'burn\')">Burn &amp; merge →</button>'+
+    '</div>'+
+    '<div class="mynft-grid" id="mynft-grid"></div>'+
+    '<div class="history-wrap"><div class="history-label">Activity</div><div class="history-list" id="history-list"></div></div>';
+
+  // Render NFT cards
   const grid=document.getElementById('mynft-grid');
-  myNFTData.forEach((item,i)=>{
-    const card=document.createElement('div');card.className='mynft-card';
-    // Use canvas with steel blue background (matches on-chain renderer)
+  myNFTData.forEach(item=>{
+    const card=document.createElement('div');
+    card.className='mynft-card'+(item.credits>0?' editable':'');
+
+    // Editable badge
+    if(item.credits>0){
+      const badge=document.createElement('div');
+      badge.className='edit-badge';
+      badge.textContent='✏️ '+item.credits+' edit'+(item.credits>1?'s':'');
+      card.appendChild(badge);
+    }
+
     const cv=makeThumb(item.sticks,200,item.blocks||[]);
     cv.style.cssText='display:block;width:100%;image-rendering:pixelated;';
     const footer=document.createElement('div');footer.className='mynft-footer';
-    const creditBadge=item.credits>0?'<span style="font-size:10px;color:var(--accent);">'+item.credits+' edit'+(item.credits>1?'s':'')+'</span>':'';
     const stage=getStage((item.sticks.length||0)+(item.blocks||[]).length);
-    footer.innerHTML='<div class="mynft-info"><h4>'+(item.name&&item.name!=='Untitled'?item.name:'Pixl')+' #'+item.id+'</h4><span>'+stage+' '+creditBadge+'</span></div><button class="edit-btn" onclick="openEditor('+item.id+')">edit</button>';
-    card.appendChild(cv);card.appendChild(footer);grid.appendChild(card);
+    const total=(item.sticks.length||0)+(item.blocks||[]).length;
+    footer.innerHTML='<div class="mynft-info"><h4>'+(item.name&&item.name!=='Untitled'?item.name:'Pixl')+' #'+item.id+'</h4>'
+      +'<span>'+stage+' · '+total+' elements</span></div>'
+      +'<button class="edit-btn" onclick="openEditor('+item.id+')" style="'+(item.credits>0?'border-color:var(--accent);color:var(--accent);':'')+'">edit</button>';
+    card.appendChild(cv);card.appendChild(footer);
+    grid.appendChild(card);
   });
+
+  // Render history from localStorage
+  renderHistory();
+}
+
+// ── Activity history (stored in localStorage) ─────────────────────────
+function addHistory(icon, text){
+  const h=JSON.parse(localStorage.getItem('pixl_history')||'[]');
+  h.unshift({icon, text, time:Date.now()});
+  if(h.length>20)h.pop();
+  localStorage.setItem('pixl_history', JSON.stringify(h));
+}
+
+function renderHistory(){
+  const list=document.getElementById('history-list');
+  if(!list)return;
+  const h=JSON.parse(localStorage.getItem('pixl_history')||'[]');
+  if(h.length===0){list.innerHTML='<div style="font-size:12px;color:var(--text3);padding:10px 0;">No activity yet.</div>';return;}
+  list.innerHTML='';
+  h.forEach(item=>{
+    const div=document.createElement('div');div.className='history-item';
+    const ago=timeAgo(item.time);
+    div.innerHTML='<div class="history-icon">'+item.icon+'</div>'
+      +'<div class="history-text">'+item.text+'</div>'
+      +'<div class="history-time">'+ago+'</div>';
+    list.appendChild(div);
+  });
+}
+
+function timeAgo(ts){
+  const s=Math.floor((Date.now()-ts)/1000);
+  if(s<60)return 'just now';
+  if(s<3600)return Math.floor(s/60)+'m ago';
+  if(s<86400)return Math.floor(s/3600)+'h ago';
+  return Math.floor(s/86400)+'d ago';
 }
 
 // ---- Burn & merge selection flow ----
@@ -1748,6 +1842,7 @@ async function confirmBurn(){
     const keptId=keep.id;
     burnKeepId=null;burnBurnId=null;
     toast('Burned #'+burn.id+' · Pixl #'+keptId+' now has '+keep.sticks.length+' sticks + 1 edit ✅');
+    addHistory('🔥','Burned <strong>Pixl #'+burn.id+'</strong> into <strong>Pixl #'+keptId+'</strong> — unlocked 1 edit');
     buildBurn();
     // Show in-page success banner with edit button
     setTimeout(()=>{
