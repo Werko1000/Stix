@@ -1839,6 +1839,43 @@ function drawEditorCanvas(){
   }
 }
 
+function buildEditor(){
+  const titleLbl=document.getElementById('editor-title-label');
+  if(titleLbl)titleLbl.textContent='Editor — Pixl #'+editorTokenId;
+  drawEditorCanvas();
+  renderEditStatus();
+  updateSaveButton();
+  const locked=editCredits<=0;
+  const hint=document.getElementById('editor-hint');
+  if(hint)hint.textContent=locked?'Layout locked — burn to unlock edits':'Click/drag sticks and blocks to move · Tetrix tab to place blocks';
+  const list=document.getElementById('editor-stick-list');
+  if(!list)return;
+  list.innerHTML='';
+  editorSticks.forEach((s,i)=>{
+    const card=document.createElement('div');
+    card.className='editor-stick-card'+(i===selectedIdx?' active':'');
+    card.style.borderColor=i===selectedIdx?s.color:'var(--border2)';
+    card.style.opacity=locked?'0.55':'1';
+    card.innerHTML='<div class="stick-label">Stick '+(i+1)+(i===selectedIdx?' · selected':'')+'</div>'
+      +'<div class="stick-attrs"><span class="attr-pill"><span class="color-dot" style="background:'+s.color+'"></span></span>'
+      +'<span class="attr-pill">'+s.length+'px</span>'
+      +'<span class="attr-pill">'+DIR_NAMES[s.dir]+'</span></div>';
+    card.onclick=()=>{selectedIdx=i;buildEditor();};
+    list.appendChild(card);
+  });
+  const ctrl=document.getElementById('editor-controls');
+  if(ctrl){
+    if(locked){ ctrl.innerHTML=''; }
+    else{
+      const s=editorSticks[selectedIdx];
+      ctrl.innerHTML='<div class="stick-label" style="margin-bottom:8px;">Direction</div><div style="display:flex;gap:6px;">'
+        +DIR_NAMES.map((d,di)=>'<button class="dir-btn'+(s&&s.dir===di?' active':'')+'" onclick="setDir('+di+')">'+d+'</button>').join('')+'</div>';
+    }
+  }
+  if(!editorCanvasReady)initEditorCanvas();
+}
+
+
 function stickHitTest(px,py){
   for(let k=editorSticks.length-1;k>=0;k--){
     const s=editorSticks[k];
@@ -1848,46 +1885,24 @@ function stickHitTest(px,py){
   return -1;
 }
 
-function buildEditor(){
-  const titleLbl=document.getElementById('editor-title-label');
-  if(titleLbl)titleLbl.textContent='Editor — Pixl #'+editorTokenId;
-  drawEditorCanvas();
-  renderEditStatus();
-  updateSaveButton();
-  const locked = editCredits<=0;
-  const hint=document.getElementById('editor-hint');
-  if(hint)hint.textContent = locked ? 'Layout locked — burn a Pixl to unlock one edit' : 'Drag a stick to move it · tap to select';
-  const list=document.getElementById('editor-stick-list');
-  if(!list)return;
-  list.innerHTML='';
-  editorSticks.forEach((s,i)=>{
-    const card=document.createElement('div');
-    card.className='editor-stick-card'+(i===selectedIdx?' active':'');
-    card.style.borderColor=i===selectedIdx?s.color:'var(--border2)';
-    card.style.opacity=locked?'0.55':'1';
-    card.innerHTML='<div class="stick-label">Stick '+(i+1)+(i===selectedIdx?' · selected':'')+'</div><div class="stick-attrs"><span class="attr-pill"><span class="color-dot" style="background:'+s.color+'"></span></span><span class="attr-pill">'+s.length+'px</span><span class="attr-pill">'+DIR_NAMES[s.dir]+'</span></div>';
-    card.onclick=()=>{selectedIdx=i;buildEditor();};
-    list.appendChild(card);
-  });
-  const ctrl=document.getElementById('editor-controls');
-  if(ctrl){
-    if(locked){ ctrl.innerHTML=''; }
-    else{
-      const s=editorSticks[selectedIdx];
-      ctrl.innerHTML='<div class="stick-label" style="margin-bottom:8px;">Rotate selected</div><div style="display:flex;gap:6px;">'+
-        DIR_NAMES.map((d,di)=>'<button class="dir-btn'+(s.dir===di?' active':'')+'" onclick="setDir('+di+')">'+d+'</button>').join('')+'</div>';
+function blockHitTest(px,py){
+  for(let k=editorBlocks.length-1;k>=0;k--){
+    const pts=getTetroPixels(editorBlocks[k].blockType,editorBlocks[k].rotation,editorBlocks[k].x,editorBlocks[k].y);
+    for(const [bx,by] of pts){
+      if(Math.abs(px-bx)<=1&&Math.abs(py-by)<=1)return k;
     }
   }
-  if(!editorCanvasReady)initEditorCanvas();
+  return -1;
 }
 
-function setDir(di){ if(editCredits<=0)return; editorSticks[selectedIdx].dir=di; layoutDirty=true; buildEditor(); }
+// Drag state: {kind:'stick'|'block', idx, offX, offY}
+let dragState=null;
 
 function initEditorCanvas(){
   const cv=document.getElementById('editor-canvas');
   if(!cv)return;
   editorCanvasReady=true;
-  let dragging=false,dragOffX=0,dragOffY=0;
+
   function getGridPos(e){
     const rect=cv.getBoundingClientRect();
     const cx=(e.touches?e.touches[0].clientX:e.clientX)-rect.left;
@@ -1895,29 +1910,55 @@ function initEditorCanvas(){
     const scaleX=cv.width/rect.width, scaleY=cv.height/rect.height;
     return {x:Math.round(cx*scaleX/EDITOR_SCALE),y:Math.round(cy*scaleY/EDITOR_SCALE)};
   }
+
   function start(e){
     if(editCredits<=0)return;
     const p=getGridPos(e);
-    const hit=stickHitTest(p.x,p.y);
-    if(hit>=0){
-      selectedIdx=hit;dragging=true;
-      dragOffX=p.x-editorSticks[hit].x;dragOffY=p.y-editorSticks[hit].y;
+
+    // Try block hit first (blocks are on top visually)
+    const bHit=blockHitTest(p.x,p.y);
+    if(bHit>=0){
+      const b=editorBlocks[bHit];
+      dragState={kind:'block',idx:bHit,offX:p.x-b.x,offY:p.y-b.y};
+      cv.style.cursor='grabbing';
+      e.preventDefault();
+      return;
+    }
+
+    // Then try stick hit
+    const sHit=stickHitTest(p.x,p.y);
+    if(sHit>=0){
+      selectedIdx=sHit;
+      dragState={kind:'stick',idx:sHit,offX:p.x-editorSticks[sHit].x,offY:p.y-editorSticks[sHit].y};
       cv.style.cursor='grabbing';
       buildEditor();
       e.preventDefault();
     }
   }
+
   function move(e){
-    if(!dragging)return;
+    if(!dragState)return;
     const p=getGridPos(e);
-    const s=editorSticks[selectedIdx];
-    s.x=Math.max(0,Math.min(GRID-1,p.x-dragOffX));
-    s.y=Math.max(0,Math.min(GRID-1,p.y-dragOffY));
+    if(dragState.kind==='stick'){
+      const s=editorSticks[dragState.idx];
+      s.x=Math.max(0,Math.min(GRID-1,p.x-dragState.offX));
+      s.y=Math.max(0,Math.min(GRID-1,p.y-dragState.offY));
+    } else {
+      const b=editorBlocks[dragState.idx];
+      b.x=Math.max(0,Math.min(GRID-1,p.x-dragState.offX));
+      b.y=Math.max(0,Math.min(GRID-1,p.y-dragState.offY));
+    }
     layoutDirty=true;
     drawEditorCanvas();
     e.preventDefault();
   }
-  function end(){dragging=false;cv.style.cursor=editCredits>0?'grab':'not-allowed';buildEditor();}
+
+  function end(){
+    dragState=null;
+    cv.style.cursor=editCredits>0?'grab':'not-allowed';
+    buildEditor();
+  }
+
   cv.style.cursor=editCredits>0?'grab':'not-allowed';
   cv.addEventListener('mousedown',start);
   window.addEventListener('mousemove',move);
@@ -1926,6 +1967,9 @@ function initEditorCanvas(){
   window.addEventListener('touchmove',move,{passive:false});
   window.addEventListener('touchend',end);
 }
+
+function setDir(di){ if(editCredits<=0)return; editorSticks[selectedIdx].dir=di; layoutDirty=true; buildEditor(); }
+
 buildHero();buildHomeGallery();buildHomeEvo();buildBlocksSection();loadPrice();
 </script>
 </body>
