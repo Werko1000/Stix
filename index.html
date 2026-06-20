@@ -939,16 +939,19 @@ async function revealMintFromChain(tokenId){
     myNFTData=myNFTData.filter(x=>x.id!==tokenId);
     myNFTData.unshift(nft);
 
-    // Show on-chain SVG
+    // Show NFT with canvas (steel blue background matching on-chain renderer)
     const mintVisual=document.querySelector('.mint-visual');
     if(mintVisual){
-      const img=document.createElement('img');
-      img.style.cssText='width:300px;height:300px;display:block;border:0.5px solid var(--border2);border-radius:12px;';
-      img.alt='Pixl #'+tokenId;
-      img.classList.add('reveal-pop');
+      const cv=makeThumb(sticks,300,blocks);
+      cv.style.cssText='width:300px;height:300px;display:block;border:0.5px solid var(--border2);border-radius:12px;image-rendering:pixelated;';
+      cv.classList.add('reveal-pop');
       mintVisual.innerHTML='';
-      mintVisual.appendChild(img);
-      fetchTokenImage(tokenId).then(src=>{ if(src) img.src=src; });
+      mintVisual.appendChild(cv);
+      // Also add spinner slot back (hidden)
+      const sp=document.createElement('div');
+      sp.className='mint-spinner-overlay';sp.id='mint-spinner';
+      sp.innerHTML='<div class="mint-spinner-ring"></div><div class="mint-spinner-text" id="mint-spinner-text"></div>';
+      mintVisual.appendChild(sp);
     }
 
     document.getElementById('mint-state-idle').style.display='none';
