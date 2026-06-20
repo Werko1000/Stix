@@ -185,7 +185,29 @@ nav { border-bottom:0.5px solid var(--border2); background:rgba(26,26,26,0.97); 
 .edit-status.no-credit { background:var(--bg2); border:0.5px solid var(--border2); color:var(--text3); }
 .edit-status .credit-num { font-size:18px; font-weight:800; }
 
-/* MY NFTS */
+/* MASTERPIECE GRID */
+.masterpiece-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+.mp-card { border:0.5px solid var(--border2); border-radius:8px; overflow:hidden; cursor:pointer; transition:all 0.15s; background:var(--bg2); }
+.mp-card:hover { border-color:var(--accent); transform:translateY(-2px); }
+.mp-card canvas { display:block; width:100%; image-rendering:pixelated; }
+.mp-card-info { padding:10px 12px; }
+.mp-card-id { font-size:11px; font-weight:700; color:var(--text); }
+.mp-card-label { font-size:10px; color:var(--text3); margin-top:2px; letter-spacing:0.5px; text-transform:uppercase; }
+.mp-card-stage { display:inline-block; font-size:9px; padding:2px 8px; border-radius:20px; background:rgba(107,143,160,0.15); color:var(--accent); font-weight:600; margin-top:5px; letter-spacing:0.5px; }
+
+/* EVOLUTION SECTION */
+.evo-section { display:flex; flex-direction:column; gap:32px; }
+.evo-row { display:flex; gap:12px; align-items:flex-end; }
+.evo-item { flex:1; display:flex; flex-direction:column; align-items:center; gap:8px; position:relative; }
+.evo-item:not(:last-child)::after { content:'→'; position:absolute; right:-8px; top:40%; font-size:16px; color:var(--text3); }
+.evo-canvas-wrap { width:100%; border:0.5px solid var(--border2); border-radius:8px; overflow:hidden; transition:border-color 0.15s; }
+.evo-canvas-wrap:hover { border-color:var(--accent); }
+.evo-canvas-wrap canvas { display:block; width:100%; image-rendering:pixelated; }
+.evo-info { text-align:center; width:100%; }
+.evo-stage { font-size:11px; font-weight:700; color:var(--text); }
+.evo-burns { font-size:10px; color:var(--text3); margin-top:2px; }
+.evo-bar { width:100%; height:2px; border-radius:1px; margin-top:6px; }
+.evo-label { font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text3); margin-bottom:16px; }
 .mynft-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
 .mynft-card { border:0.5px solid var(--border2); border-radius:10px; overflow:hidden; cursor:pointer; transition:all 0.15s; background:var(--bg2); }
 .mynft-card:hover { border-color:var(--border3); transform:translateY(-2px); }
@@ -196,6 +218,19 @@ nav { border-bottom:0.5px solid var(--border2); background:rgba(26,26,26,0.97); 
 .edit-btn { font-size:11px; padding:5px 12px; border:0.5px solid var(--border2); border-radius:4px; background:var(--bg3); color:var(--text2); cursor:pointer; transition:all 0.15s; }
 .edit-btn:hover { border-color:var(--border3); color:var(--text); }
 
+/* BUILDING BLOCKS */
+.blocks-section { display:flex; flex-direction:column; gap:32px; }
+.blocks-title { font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--text3); margin-bottom:14px; }
+.color-grid { display:flex; flex-wrap:wrap; gap:8px; }
+.color-swatch { width:36px; height:36px; border-radius:6px; border:0.5px solid rgba(255,255,255,0.06); cursor:pointer; transition:transform 0.15s; }
+.color-swatch:hover { transform:scale(1.15); }
+.tetro-showcase { display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start; }
+.tetro-type { display:flex; flex-direction:column; gap:8px; }
+.tetro-type-name { font-size:13px; font-weight:800; color:var(--accent); }
+.tetro-rot-row { display:flex; gap:6px; }
+.sticks-showcase { display:flex; gap:24px; }
+.stick-demo { display:flex; flex-direction:column; align-items:center; gap:6px; }
+.stick-lbl { font-size:10px; color:var(--text3); letter-spacing:0.5px; text-transform:uppercase; }
 /* MISC */
 .connect-prompt { text-align:center; padding:64px 20px; }
 .connect-prompt h2 { font-size:22px; font-weight:700; margin-bottom:10px; }
@@ -705,8 +740,24 @@ footer { border-top: 0.5px solid #eee; }
   <div class="section">
     <div class="section-inner">
       <div class="section-label">What you can build</div>
-      <p style="font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:24px;max-width:480px;">Burn enough Pixl and the elements start to add up. Here's what's possible on a single 24×24 canvas.</p>
-      <div class="nft-grid" id="home-gallery"></div>
+      <p style="font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:28px;max-width:480px;">Burn enough Pixl and the elements add up. Here's what's possible on a 24×24 canvas.</p>
+      <div class="masterpiece-grid" id="home-gallery"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-inner">
+      <div class="section-label">Evolution</div>
+      <p style="font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:28px;max-width:480px;">Every Pixl starts as a few random elements. Burn to grow. The same DNA evolves from Line to Masterpiece.</p>
+      <div class="evo-section" id="home-evo"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-inner">
+      <div class="section-label">Building Blocks</div>
+      <p style="font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:28px;max-width:480px;">Every Pixl is built from just three ingredients — colors, sticks, and Tetrominos. Infinite combinations, all on-chain.</p>
+      <div class="blocks-section" id="home-blocks"></div>
     </div>
   </div>
 </div>
@@ -966,7 +1017,21 @@ function toChainStick(s) {
 let walletAddress=null;
 function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
 function makeStick(){return{color:PALETTE[rand(0,15)],length:rand(5,15),x:rand(8,42),y:rand(8,42),dir:rand(0,3)};}
-function makeNFT(n){return Array.from({length:n||3},makeStick);}
+function makeNFT(n,seedArr){
+  if(!seedArr) return Array.from({length:n||3},makeStick);
+  const s=seedArr[0];
+  const sticks=[];
+  for(let i=0;i<Math.min(n,12);i++){
+    sticks.push({
+      color:PALETTE[Math.abs(Math.floor(Math.sin(s+i*3+1)*16))%16],
+      length:3+Math.abs(Math.floor(Math.sin(s+i*7+1)*7))%7,
+      x:2+Math.abs(Math.floor(Math.sin(s+i*11+1)*20))%(GRID-4),
+      y:2+Math.abs(Math.floor(Math.sin(s+i*13+1)*20))%(GRID-4),
+      dir:Math.abs(Math.floor(Math.sin(s+i*17+1)*2))%2,
+    });
+  }
+  return sticks;
+}
 function pp(ctx,x,y,c,sc){if(x<0||x>=GRID||y<0||y>=GRID)return;ctx.fillStyle=c;ctx.fillRect(x*sc,y*sc,sc,sc);}
 // Tetromino pixel offsets per type and rotation
 const TETROS=[
@@ -1578,11 +1643,159 @@ function buildHero(){
     card.appendChild(cv);card.appendChild(footer);wrap.appendChild(card);
   });
 }
-const homeGalleryData=Array.from({length:10},(_,i)=>({id:i+1,sticks:makeNFT(rand(1,3)*3),price:'0.0'+rand(1,9)}));
+const homeGalleryData=[];
+
 function buildHomeGallery(){
   const grid=document.getElementById('home-gallery');if(!grid)return;grid.innerHTML='';
-  const showcase=ARTWORKS.slice(0,6);
-  showcase.forEach((a,i)=>{const card=document.createElement('div');card.className='nft-card';const c=makeThumb(a.sticks,200);c.style.cssText='width:100%;image-rendering:pixelated;display:block;';const info=document.createElement('div');info.className='nft-card-info';info.innerHTML='<div class="nft-card-id">#'+String(i+1).padStart(4,'0')+'</div><div class="nft-card-name">'+a.name+' · '+a.sticks.length+' sticks</div>';card.appendChild(c);card.appendChild(info);grid.appendChild(card);});
+  const pieces=[
+    {draw:drawMohawk,  label:'Mohawk Punk',  id:'#0001'},
+    {draw:drawBeanie,  label:'Beanie OG',    id:'#0042'},
+    {draw:drawTower,   label:'City Tower',   id:'#0137'},
+    {draw:drawNPCFace, label:'NPC Face',     id:'#0218'},
+    {draw:drawShades,  label:'Shades Punk',  id:'#0305'},
+    {draw:drawHouse,   label:'Pixel House',  id:'#0411'},
+    {draw:drawBlonde,  label:'Blonde Punk',  id:'#0533'},
+    {draw:drawPunkGray,label:'Gray Punk',    id:'#0667'},
+  ];
+  pieces.forEach(m=>{
+    const card=document.createElement('div');card.className='mp-card';
+    const cv=m.draw();cv.style.cssText='display:block;width:100%;image-rendering:pixelated;';
+    const info=document.createElement('div');info.className='mp-card-info';
+    info.innerHTML='<div class="mp-card-id">'+m.id+'</div>'
+      +'<div class="mp-card-label">'+m.label+'</div>'
+      +'<div class="mp-card-stage">Masterpiece</div>';
+    card.appendChild(cv);card.appendChild(info);grid.appendChild(card);
+  });
+}
+
+// ── EVOLUTION SECTION ──────────────────────────────────────────────────
+function buildHomeEvo(){
+  const el=document.getElementById('home-evo');if(!el)return;el.innerHTML='';
+  const STAGES=[
+    {name:'Line',        burns:'0 burns',  count:3,  col:'#444'},
+    {name:'Sketch',      burns:'1 burn',   count:5,  col:'#6B6B6B'},
+    {name:'Study',       burns:'3 burns',  count:9,  col:'#6B8FA0'},
+    {name:'Painting',    burns:'7 burns',  count:15, col:'#D4B87A'},
+    {name:'Masterpiece', burns:'15 burns', count:null,col:'#C4B5D0'},
+  ];
+
+  // Two rows: one for punk evolution, one for random seed
+  [
+    {title:'Mohawk Punk evolves →', masterDraw:drawMohawk, seed:42},
+    {title:'Random Pixl evolves →', masterDraw:null,       seed:137},
+  ].forEach(row=>{
+    const rowWrap=document.createElement('div');
+    const lbl=document.createElement('div');lbl.className='evo-label';lbl.textContent=row.title;
+    const cards=document.createElement('div');cards.className='evo-row';
+    STAGES.forEach((st,i)=>{
+      const item=document.createElement('div');item.className='evo-item';
+      const wrap=document.createElement('div');wrap.className='evo-canvas-wrap';
+      let cv;
+      if(st.name==='Masterpiece' && row.masterDraw){
+        cv=row.masterDraw();
+      } else {
+        cv=document.createElement('canvas');
+        const sc=Math.floor(160/GRID);
+        cv.width=GRID*sc;cv.height=GRID*sc;
+        const ctx=cv.getContext('2d');
+        drawNFT(ctx,makeNFT(st.count,[row.seed]),Math.floor(160/GRID),(row.seed%2===0?[]:[]));
+      }
+      cv.style.cssText='display:block;width:100%;image-rendering:pixelated;';
+      wrap.appendChild(cv);
+      const info=document.createElement('div');info.className='evo-info';
+      info.innerHTML='<div class="evo-stage" style="color:'+st.col+'">'+st.name+'</div>'
+        +'<div class="evo-burns">'+st.burns+'</div>';
+      const bar=document.createElement('div');bar.className='evo-bar';
+      bar.style.cssText='background:'+st.col+';width:'+((i+1)*20)+'%;';
+      info.appendChild(bar);
+      item.appendChild(wrap);item.appendChild(info);
+      cards.appendChild(item);
+    });
+    rowWrap.appendChild(lbl);rowWrap.appendChild(cards);
+    el.appendChild(rowWrap);
+  });
+}
+
+// Seeded makeNFT – see main makeNFT above
+
+// ── BUILDING BLOCKS SECTION ────────────────────────────────────────────
+function buildBlocksSection(){
+  const el=document.getElementById('home-blocks');if(!el)return;el.innerHTML='';
+
+  // Colors
+  const colorWrap=document.createElement('div');
+  colorWrap.innerHTML='<div class="blocks-title">16 NPC Colors</div>';
+  const colorGrid=document.createElement('div');colorGrid.className='color-grid';
+  const COLOR_NAMES=['Near Black','Mid Gray','Light Gray','Off White','Warm Tan','Dark Tan','Lavender','Purple','Steel Blue','Blue-Gray','Brown','Cream','Dark','Gray','Beige','Steel'];
+  PALETTE.forEach((c,i)=>{
+    const dot=document.createElement('div');dot.className='color-swatch';
+    dot.style.cssText='background:'+c+';';
+    dot.title=COLOR_NAMES[i]||c;
+    colorGrid.appendChild(dot);
+  });
+  colorWrap.appendChild(colorGrid);
+
+  // Tetrominos
+  const tetWrap=document.createElement('div');
+  tetWrap.innerHTML='<div class="blocks-title">7 Tetromino Types × 4 Rotations</div>';
+  const tetGrid=document.createElement('div');tetGrid.className='tetro-showcase';
+  const NAMES=['I','O','T','S','Z','L','J'];
+  const TETROS_FULL=[
+    [[[0,0],[1,0],[2,0],[3,0]],[[0,0],[0,1],[0,2],[0,3]]],
+    [[[0,0],[1,0],[0,1],[1,1]]],
+    [[[0,0],[1,0],[2,0],[1,1]],[[0,0],[0,1],[1,1],[0,2]],[[1,0],[0,1],[1,1],[2,1]],[[1,0],[0,1],[1,1],[1,2]]],
+    [[[1,0],[2,0],[0,1],[1,1]],[[0,0],[0,1],[1,1],[1,2]]],
+    [[[0,0],[1,0],[1,1],[2,1]],[[1,0],[0,1],[1,1],[0,2]]],
+    [[[0,0],[0,1],[0,2],[1,2]],[[0,0],[1,0],[2,0],[0,1]],[[0,0],[1,0],[1,1],[1,2]],[[2,0],[0,1],[1,1],[2,1]]],
+    [[[1,0],[1,1],[0,2],[1,2]],[[0,0],[0,1],[1,1],[2,1]],[[0,0],[1,0],[0,1],[0,2]],[[0,0],[1,0],[2,0],[2,1]]],
+  ];
+  TETROS_FULL.forEach((rots,ti)=>{
+    const typeWrap=document.createElement('div');typeWrap.className='tetro-type';
+    const typeLbl=document.createElement('div');typeLbl.className='tetro-type-name';typeLbl.textContent=NAMES[ti];
+    const rotRow=document.createElement('div');rotRow.className='tetro-rot-row';
+    rots.forEach((shape,ri)=>{
+      const cv=document.createElement('canvas');cv.width=48;cv.height=48;
+      const ctx=cv.getContext('2d');
+      ctx.fillStyle=BG_NPC;ctx.fillRect(0,0,48,48);
+      const col=PALETTE[(ti*3+ri*2)%16];
+      const xs=shape.map(([x])=>x),ys=shape.map(([,y])=>y);
+      const mx=Math.max(...xs),my=Math.max(...ys);
+      const sc=Math.floor(8/(Math.max(mx,my)+2));
+      const ox=Math.floor((48-(mx+1)*sc*2)/2);
+      const oy=Math.floor((48-(my+1)*sc*2)/2);
+      shape.forEach(([dx,dy])=>{ctx.fillStyle=col;ctx.fillRect(ox+dx*sc*2,oy+dy*sc*2,sc*2-1,sc*2-1);});
+      cv.style.cssText='display:block;image-rendering:pixelated;border-radius:4px;border:0.5px solid var(--border2);';
+      rotRow.appendChild(cv);
+    });
+    typeWrap.appendChild(typeLbl);typeWrap.appendChild(rotRow);
+    tetGrid.appendChild(typeWrap);
+  });
+  tetWrap.appendChild(tetGrid);
+
+  // Sticks
+  const sticksWrap=document.createElement('div');
+  sticksWrap.innerHTML='<div class="blocks-title">2 Stick Directions</div>';
+  const sticksRow=document.createElement('div');sticksRow.className='sticks-showcase';
+  [['—','Horizontal'],[' | ','Vertical']].forEach(([sym,lbl])=>{
+    const cv=document.createElement('canvas');cv.width=48;cv.height=48;
+    const ctx=cv.getContext('2d');
+    ctx.fillStyle=BG_NPC;ctx.fillRect(0,0,48,48);
+    ctx.fillStyle=PALETTE[4];
+    if(lbl==='Horizontal') ctx.fillRect(8,22,32,4);
+    else ctx.fillRect(22,8,4,32);
+    cv.style.cssText='display:block;image-rendering:pixelated;border-radius:4px;border:0.5px solid var(--border2);';
+    const d=document.createElement('div');d.className='stick-demo';
+    d.innerHTML='<div class="stick-sym">'+sym+'</div>';
+    d.appendChild(cv);
+    const l=document.createElement('div');l.className='stick-lbl';l.textContent=lbl;
+    d.appendChild(l);
+    sticksRow.appendChild(d);
+  });
+  sticksWrap.appendChild(sticksRow);
+
+  el.appendChild(colorWrap);
+  el.appendChild(tetWrap);
+  el.appendChild(sticksWrap);
 }
 
 function St(color,length,x,y,dir){return {color,length,x,y,dir};}
@@ -1967,7 +2180,7 @@ function initEditorCanvas(){
   window.addEventListener('touchmove',move,{passive:false});
   window.addEventListener('touchend',end);
 }
-buildHero();buildHomeGallery();loadPrice();
+buildHero();buildHomeGallery();buildHomeEvo();buildBlocksSection();loadPrice();
 </script>
 </body>
 </html>
