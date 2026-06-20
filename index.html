@@ -107,7 +107,14 @@ nav { border-bottom:0.5px solid rgba(255,255,255,0.1); background:#6B8FA0; posit
 .nft-footer-id { font-size:11px; font-weight:600; color:var(--text); }
 .nft-footer-price { font-size:11px; color:var(--text3); }
 
-/* MINT */
+/* QTY PICKER */
+.qty-wrap { margin:16px 0 10px; }
+.qty-label { font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--text3); margin-bottom:8px; }
+.qty-btns { display:flex; gap:6px; }
+.qty-btn { flex:1; padding:10px 0; border:0.5px solid var(--border2); border-radius:6px; background:var(--bg3); color:var(--text2); font-size:15px; font-weight:700; cursor:pointer; transition:all 0.15s; }
+.qty-btn:hover { border-color:var(--border3); color:var(--text); }
+.qty-btn.active { border-color:var(--accent); background:var(--accent); color:#fff; }
+.mint-total-row { display:flex; justify-content:space-between; align-items:center; padding:10px 0 14px; border-bottom:0.5px solid var(--border); margin-bottom:14px; }
 .mint-page-inner { max-width:var(--max); margin:0 auto; padding:36px 24px; display:grid; grid-template-columns:1fr 1fr; gap:36px; align-items:start; }
 .mint-stage { display:grid; grid-template-columns:300px 1fr; gap:32px; align-items:start; }
 .mint-visual { position:relative; width:300px; height:300px; }
@@ -439,15 +446,30 @@ footer { border-top:0.5px solid var(--border2); }
         <div class="mint-info">
           <div id="mint-state-idle">
             <h3>Mint is a surprise.</h3>
-            <p class="mint-desc">You can't pick your sticks. Each Pixl gets three lines generated from on-chain Chainlink randomness at the moment you mint — unmanipulable, unknowable in advance, revealed right here once it lands.</p>
+            <p class="mint-desc">Each Pixl is generated from on-chain Chainlink randomness — sticks and Tetrominos, unmanipulable, unknowable in advance.</p>
             <div class="mint-rows">
-              <div class="mint-row"><span class="lbl">Sticks</span><span class="val">3–6 (random)</span></div>
-              <div class="mint-row"><span class="lbl">Canvas</span><span class="val">50 &times; 50 px</span></div>
+              <div class="mint-row"><span class="lbl">Elements</span><span class="val">3–5 per Pixl (random)</span></div>
+              <div class="mint-row"><span class="lbl">Canvas</span><span class="val">24×24 px on-chain</span></div>
               <div class="mint-row"><span class="lbl">Storage</span><span class="val">100% on-chain</span></div>
-              <div class="mint-row"><span class="lbl">Network</span><span class="val">Base</span></div>
-              <div class="mint-row" style="border:none"><span class="lbl">Price</span><span class="val mint-price-display">TBD</span></div>
+              <div class="mint-row"><span class="lbl">Network</span><span class="val">Base Sepolia</span></div>
+              <div class="mint-row" style="border:none"><span class="lbl">Price per Pixl</span><span class="val mint-price-display" id="price-per">TBD</span></div>
             </div>
-            <button class="mint-cta" id="mint-cta" onclick="handleMint()">Mint a Pixl</button>
+            <!-- Quantity picker -->
+            <div class="qty-wrap">
+              <div class="qty-label">How many?</div>
+              <div class="qty-btns">
+                <button class="qty-btn active" onclick="setQty(1)">1</button>
+                <button class="qty-btn" onclick="setQty(2)">2</button>
+                <button class="qty-btn" onclick="setQty(3)">3</button>
+                <button class="qty-btn" onclick="setQty(4)">4</button>
+                <button class="qty-btn" onclick="setQty(5)">5</button>
+              </div>
+            </div>
+            <div class="mint-total-row">
+              <span style="color:var(--text2);font-size:13px;">Total</span>
+              <span class="mint-price-display" id="mint-total-price" style="font-size:16px;font-weight:700;">TBD</span>
+            </div>
+            <button class="mint-cta" id="mint-cta" onclick="handleMint()">Mint 1 Pixl</button>
           </div>
           <div id="mint-state-revealed" style="display:none;">
             <h3 id="reveal-title">Meet Pixl #—</h3>
@@ -805,6 +827,24 @@ function updateWalletUI(){
 }
 let revealTimer=null;
 let mintPriceWei=ethers.BigNumber.from(0);
+let mintQty=1;
+
+function setQty(n){
+  mintQty=n;
+  document.querySelectorAll('.qty-btn').forEach((b,i)=>b.classList.toggle('active',i+1===n));
+  const btn=document.getElementById('mint-cta');
+  if(btn) btn.textContent='Mint '+n+' Pixl'+(n>1?'s':'');
+  updateTotalPrice();
+}
+
+function updateTotalPrice(){
+  const total=document.getElementById('mint-total-price');
+  if(!total)return;
+  if(mintPriceWei.isZero()){total.textContent='Free';return;}
+  const totalWei=mintPriceWei.mul(mintQty);
+  const eth=parseFloat(ethers.utils.formatEther(totalWei));
+  total.textContent=eth.toFixed(4)+' ETH';
+}
 
 async function loadPrice(){
   try{
@@ -812,17 +852,21 @@ async function loadPrice(){
     mintPriceWei=await c.price();
     const eth=parseFloat(ethers.utils.formatEther(mintPriceWei));
     const priceStr=eth===0?'Free':eth.toFixed(4)+' ETH';
-    document.querySelectorAll('.mint-price-display').forEach(el=>el.textContent=priceStr);
+    const perEl=document.getElementById('price-per');
+    if(perEl)perEl.textContent=priceStr;
+    updateTotalPrice();
   }catch(e){}
 }
 
 function resetMint(){
+  mintQty=1;
   if(revealTimer){clearTimeout(revealTimer);revealTimer=null;}
   document.getElementById('mint-state-idle').style.display='';
   document.getElementById('mint-state-revealed').style.display='none';
   document.getElementById('mint-spinner').classList.remove('active');
   const cta=document.getElementById('mint-cta');
-  if(cta){cta.disabled=false;cta.textContent='Mint a Pixl';}
+  if(cta){cta.disabled=false;cta.textContent='Mint 1 Pixl';}
+  document.querySelectorAll('.qty-btn').forEach((b,i)=>b.classList.toggle('active',i===0));
   // Restore canvas (may have been replaced by <img> after reveal)
   const mintVisual=document.querySelector('.mint-visual');
   if(mintVisual){
@@ -858,48 +902,51 @@ function resetMint(){
 async function handleMint(){
   if(!walletAddress){toast('Connect your wallet first');return;}
   const cta=document.getElementById('mint-cta');
-  if(cta.disabled)return; // prevent double-click
+  if(cta.disabled)return;
   cta.disabled=true; cta.textContent='Confirm in wallet…';
   const spinner=document.getElementById('mint-spinner');
   const stext=document.getElementById('mint-spinner-text');
   spinner.classList.add('active');
   try {
     const contract=getContract(true);
-    stext.textContent='Confirm in wallet…';
-    const tx=await contract.requestMint({value:mintPriceWei});
-    stext.textContent='Transaction sent… '+tx.hash.slice(0,10)+'…';
+    const totalValue=mintPriceWei.mul(mintQty);
 
-    // Start polling immediately — don't wait for receipt (Alchemy may not see Rabby tx instantly)
+    // Snapshot baseline tokens
     const readContract=getContract(false);
-    let found=false;
-    let pollCount=0;
-
-    // Snapshot current tokens as baseline
     let knownIds=new Set();
     try{
       const currentIds=await readContract.tokensOfOwner(walletAddress);
       currentIds.forEach(id=>knownIds.add(id.toNumber()));
-      console.log('Mint polling: baseline ids:', [...knownIds]);
-    }catch(e){ console.warn('baseline error:',e.message); }
+    }catch(e){}
 
-    stext.textContent='Waiting for Chainlink VRF…';
+    // Send all mint transactions
+    stext.textContent='Confirm '+mintQty+' mint'+(mintQty>1?'s':'')+' in wallet…';
+    const txs=[];
+    for(let i=0;i<mintQty;i++){
+      stext.textContent='Confirm mint '+(i+1)+' of '+mintQty+'…';
+      const tx=await contract.requestMint({value:mintPriceWei});
+      txs.push(tx);
+      stext.textContent='Mint '+(i+1)+'/'+mintQty+' sent… waiting for more confirmations';
+    }
+    stext.textContent='Waiting for Chainlink VRF… ('+mintQty+' Pixl)';
 
+    let found=0;let pollCount=0;
     const pollTimer=setInterval(async()=>{
       pollCount++;
-      stext.textContent='Waiting for Chainlink VRF… ('+Math.round(pollCount*8)+'s)';
+      stext.textContent='Waiting for VRF… ('+Math.round(pollCount*8)+'s)';
       try {
         const ids=await readContract.tokensOfOwner(walletAddress);
-        console.log('Poll',pollCount,'- tokens:', ids.map(i=>i.toNumber()));
-        for(const id of ids){
-          const tokenId=id.toNumber();
-          if(!knownIds.has(tokenId)&&!found){
-            console.log('New token found:', tokenId);
-            found=true;
+        const newIds=ids.map(i=>i.toNumber()).filter(id=>!knownIds.has(id));
+        if(newIds.length>found){
+          // Reveal the latest new token
+          const latestId=newIds[newIds.length-1];
+          found=newIds.length;
+          stext.textContent=found+'/'+mintQty+' Pixl revealed…';
+          if(found===mintQty||found===1){
             clearInterval(pollTimer);
             if(revealTimer){clearTimeout(revealTimer);revealTimer=null;}
             spinner.classList.remove('active');
-            revealMintFromChain(tokenId);
-            return;
+            revealMintFromChain(latestId);
           }
         }
       }catch(e){ console.warn('poll error:',e.message); }
