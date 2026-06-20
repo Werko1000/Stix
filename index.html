@@ -320,7 +320,7 @@ footer { border-top: 0.5px solid #eee; }
         <div class="how-step">
           <div class="how-accent" style="background:#fff0f0; border:2px solid var(--c1);"></div>
           <div class="how-step-num">01 &mdash; Mint</div>
-          <h3>You get three sticks.</h3>
+          <h3>You get sticks + tetrominos.</h3>
           <p>Each Stix is minted with three randomly generated pixel lines &mdash; a color from the 16-color palette, a length between 5 and 15 pixels, and one of four directions.</p>
         </div>
         <div class="how-step">
@@ -390,7 +390,7 @@ footer { border-top: 0.5px solid #eee; }
           </div>
           <div id="mint-state-revealed" style="display:none;">
             <h3 id="reveal-title">Meet Stix #—</h3>
-            <p class="mint-desc">Minted and stored on-chain. Here are your three sticks — burn another Stix later to start combining.</p>
+            <p class="mint-desc">Minted and stored on-chain. Sticks and Tetrominos — burn another Stix to unlock edits.</p>
             <div id="reveal-stick-list"></div>
             <div style="display:flex; gap:8px; margin-top:8px;">
               <button class="mint-cta" style="flex:1;" onclick="showPage('mynfts')">View in My NFTs</button>
@@ -853,12 +853,15 @@ async function revealMintFromChain(tokenId){
   try {
     const contract=getContract();
     const rawSticks=await contract.getSticks(tokenId);
+    const rawBlocks=await contract.getBlocks(tokenId);
     const credits=await contract.editCredits(tokenId);
     const sticks=rawSticks.map(formatStick);
-    const nft={id:tokenId,sticks,credits:credits};
+    const blocks=rawBlocks.map(formatBlock);
+    const nft={id:tokenId,sticks,blocks,credits:Number(credits),name:'Untitled'};
     myNFTData=myNFTData.filter(x=>x.id!==tokenId);
     myNFTData.unshift(nft);
-    // Show on-chain SVG (with pulse animation!) replacing the canvas
+
+    // Show on-chain SVG
     const mintVisual=document.querySelector('.mint-visual');
     if(mintVisual){
       const img=document.createElement('img');
@@ -869,19 +872,42 @@ async function revealMintFromChain(tokenId){
       mintVisual.appendChild(img);
       fetchTokenImage(tokenId).then(src=>{ if(src) img.src=src; });
     }
+
     document.getElementById('mint-state-idle').style.display='none';
-    const rev=document.getElementById('mint-state-revealed');
-    rev.style.display='';
+    document.getElementById('mint-state-revealed').style.display='';
     document.getElementById('reveal-title').textContent='Meet Stix #'+tokenId;
+
+    // Update description
+    const desc=document.querySelector('#mint-state-revealed .mint-desc');
+    if(desc) desc.textContent='Minted on-chain! '+sticks.length+' sticks and '+blocks.length+' tetromino'+(blocks.length!==1?'s':'')+' — burn another Stix to unlock edits.';
+
+    // Build element list
     const list=document.getElementById('reveal-stick-list');
     list.innerHTML='';
-    const acc=['#E63946','#2A9D8F','#C8B6FF'];
+    const TETRO_NAMES=['I','O','T','S','Z','L','J'];
+    const BLOCK_COLORS=['#E63946','#F4A261','#E9C46A','#2A9D8F','#457B9D','#C8B6FF','#FF6FC8'];
+
     sticks.forEach((s,i)=>{
       const d=document.createElement('div');
-      d.style.cssText='border-left:3px solid '+acc[i]+';padding:9px 13px;margin-bottom:8px;background:#fafafa;border-radius:0 6px 6px 0;';
-      d.innerHTML='<div style="font-size:11px;color:#999;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Stick '+(i+1)+'</div><div class="stick-attrs"><span class="attr-pill"><span class="color-dot" style="background:'+s.color+'"></span>'+s.color+'</span><span class="attr-pill">'+s.length+'px</span><span class="attr-pill">'+DIR_NAMES[s.dir]+'</span></div>';
+      d.style.cssText='border-left:3px solid '+s.color+';padding:9px 13px;margin-bottom:6px;background:#fafafa;border-radius:0 6px 6px 0;';
+      d.innerHTML='<div style="font-size:10px;color:#999;margin-bottom:3px;text-transform:uppercase;letter-spacing:0.5px;">Stick '+(i+1)+'</div>'
+        +'<div class="stick-attrs"><span class="attr-pill"><span class="color-dot" style="background:'+s.color+'"></span>'+s.color+'</span>'
+        +'<span class="attr-pill">'+s.length+'px</span>'
+        +'<span class="attr-pill">'+(s.dir===0?'—':'|')+'</span></div>';
       list.appendChild(d);
     });
+
+    blocks.forEach((b,i)=>{
+      const col=BLOCK_COLORS[b.blockType%BLOCK_COLORS.length];
+      const d=document.createElement('div');
+      d.style.cssText='border-left:3px solid '+col+';padding:9px 13px;margin-bottom:6px;background:#fafafa;border-radius:0 6px 6px 0;';
+      d.innerHTML='<div style="font-size:10px;color:#999;margin-bottom:3px;text-transform:uppercase;letter-spacing:0.5px;">Block '+(i+1)+'</div>'
+        +'<div class="stick-attrs"><span class="attr-pill"><span class="color-dot" style="background:'+b.color+'"></span>'+b.color+'</span>'
+        +'<span class="attr-pill">'+TETRO_NAMES[b.blockType]+'-Block</span>'
+        +'<span class="attr-pill">'+['0°','90°','180°','270°'][b.rotation]+'</span></div>';
+      list.appendChild(d);
+    });
+
     toast('Minted · Stix #'+tokenId+' 🎉');
     const cta=document.getElementById('mint-cta');
     if(cta){cta.disabled=false;cta.textContent='Mint a Stix';}
