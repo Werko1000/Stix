@@ -137,18 +137,30 @@ nav { border-bottom:0.5px solid rgba(255,255,255,0.1); background:#6B8FA0; posit
 
 /* BURN */
 .burn-col { flex:1; }
+.burn-select-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:24px; }
+.burn-col h4 { font-size:13px; font-weight:600; margin-bottom:4px; }
+.burn-col.keep h4 { color:var(--accent); }
+.burn-col.burn h4 { color:var(--c1); }
+.burn-col-sub { font-size:12px; color:var(--text3); margin-bottom:12px; }
+.burn-pick-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
 .burn-list { display:flex; flex-direction:column; gap:6px; }
-.burn-pick { border:1.5px solid var(--border2); border-radius:8px; overflow:hidden; cursor:pointer; transition:border-color 0.15s; background:var(--bg2); }
-.burn-pick:hover { border-color:var(--border3); }
+.burn-pick { border:1.5px solid var(--border2); border-radius:8px; overflow:hidden; cursor:pointer; transition:border-color 0.15s; position:relative; background:var(--bg2); }
+.burn-pick canvas { display:block; width:100%; image-rendering:pixelated; }
+.burn-pick .pick-label { padding:5px 8px; font-size:11px; color:var(--text3); }
 .burn-pick.sel-keep { border-color:var(--accent); }
 .burn-pick.sel-burn { border-color:var(--c1); }
-.pick-tag { font-size:10px; font-weight:700; text-align:center; padding:3px; color:#fff; letter-spacing:1px; text-transform:uppercase; }
+.burn-pick.disabled { opacity:0.35; cursor:not-allowed; }
+.burn-pick .pick-tag { position:absolute; top:6px; right:6px; font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px; color:#fff; }
 .burn-pick.sel-keep .pick-tag { background:var(--accent); }
 .burn-pick.sel-burn .pick-tag { background:var(--c1); }
-.burn-pick canvas { display:block; width:100%; image-rendering:pixelated; }
-.burn-confirm { margin-top:20px; text-align:center; }
+.burn-confirm { border:0.5px solid var(--border2); border-radius:12px; padding:20px; display:flex; gap:20px; align-items:center; flex-wrap:wrap; background:var(--bg2); }
+.burn-preview-canvas { image-rendering:pixelated; border:0.5px solid var(--border2); border-radius:8px; }
+.burn-confirm-text { flex:1; min-width:180px; }
+.burn-confirm-text h4 { font-size:15px; font-weight:600; margin-bottom:6px; }
+.burn-confirm-text p { font-size:13px; color:var(--text2); line-height:1.6; margin-bottom:14px; }
 .burn-go { padding:11px 22px; background:var(--c1); color:#fff; border:none; border-radius:6px; font-size:14px; font-weight:700; cursor:pointer; }
 .burn-go:hover { opacity:0.88; }
+.burn-go:disabled { opacity:0.4; cursor:not-allowed; }
 
 /* EDITOR */
 .editor-wrap { display:grid; grid-template-columns:480px 1fr; gap:24px; align-items:start; }
@@ -1625,7 +1637,7 @@ function makeBurnPick(item,role){
   // disable the same token in the opposite column
   const disabled=(role==='keep'&&burnBurnId===item.id)||(role==='burn'&&burnKeepId===item.id);
   if(disabled)div.classList.add('disabled');
-  const c=makeThumb(item.sticks,140);c.style.cssText='width:100%;image-rendering:pixelated;display:block;';
+  const c=makeThumb(item.sticks,140,item.blocks||[]);c.style.cssText='width:100%;image-rendering:pixelated;display:block;';
   div.appendChild(c);
   const lbl=document.createElement('div');lbl.className='pick-label';lbl.textContent='#'+item.id+' · '+item.sticks.length+' sticks';
   div.appendChild(lbl);
