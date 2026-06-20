@@ -35,6 +35,10 @@ nav { border-bottom:0.5px solid rgba(255,255,255,0.1); background:#6B8FA0; posit
 .btn-wallet:hover { background:rgba(255,255,255,0.22); }
 .btn-wallet.connected { border-color:rgba(255,255,255,0.6); }
 .wallet-dot { width:6px; height:6px; border-radius:50%; background:currentColor; }
+.wallet-dropdown { position:absolute; right:24px; top:52px; background:#1e1e1e; border:0.5px solid var(--border2); border-radius:8px; padding:6px; min-width:180px; z-index:200; box-shadow:0 8px 24px rgba(0,0,0,0.5); }
+.wallet-dropdown-addr { font-size:11px; color:var(--text3); padding:6px 8px; border-bottom:0.5px solid var(--border); margin-bottom:4px; font-family:monospace; }
+.wallet-dropdown-item { width:100%; text-align:left; padding:8px 10px; font-size:12px; color:#ff6b6b; background:transparent; border:none; border-radius:4px; cursor:pointer; font-weight:600; }
+.wallet-dropdown-item:hover { background:rgba(255,107,107,0.1); }
 .mobile-nav { display:none; background:#5A7A90; border-bottom:none; padding:10px 24px; flex-direction:column; }
 .mobile-nav a { font-size:14px; color:rgba(255,255,255,0.7); padding:10px 0; cursor:pointer; border-bottom:0.5px solid rgba(255,255,255,0.15); }
 .mobile-nav.open { display:flex; }
@@ -320,6 +324,10 @@ footer { border-top:0.5px solid var(--border2); }
         <span class="wallet-dot"></span>
         <span id="wallet-label">Connect wallet</span>
       </button>
+      <div class="wallet-dropdown" id="wallet-dropdown" style="display:none;">
+        <div class="wallet-dropdown-addr" id="wallet-dropdown-addr"></div>
+        <button class="wallet-dropdown-item" onclick="disconnectWallet()">Disconnect</button>
+      </div>
     </div>
     <button class="nav-menu-btn" onclick="toggleMobileNav()" aria-label="Menu">&#9776;</button>
   </div>
@@ -349,9 +357,9 @@ footer { border-top:0.5px solid var(--border2); }
   </div>
   <div class="stats-bar">
     <div class="stats-inner">
-      <div class="stat"><div class="stat-val">10,000</div><div class="stat-lbl">Max Supply</div></div>
+      <div class="stat"><div class="stat-val" id="stat-remaining">10,000</div><div class="stat-lbl">Remaining</div></div>
       <div class="stat"><div class="stat-val">0.001Ξ</div><div class="stat-lbl">Mint Price</div></div>
-      <div class="stat"><div class="stat-val">24×24</div><div class="stat-lbl">Pixel Canvas</div></div>
+      <div class="stat"><div class="stat-val" id="stat-burned">—</div><div class="stat-lbl">Burned</div></div>
       <div class="stat"><div class="stat-val">7</div><div class="stat-lbl">Tetromino Types</div></div>
     </div>
   </div>
@@ -806,7 +814,24 @@ function getEthereum(){
 }
 
 async function handleWalletClick(){
-  if(walletAddress){toast(walletAddress.slice(0,6)+'...'+walletAddress.slice(-4)+' · Base');return;}
+  if(walletAddress){
+    // Show disconnect dropdown
+    const existing=document.getElementById('wallet-dropdown');
+    if(existing){existing.remove();return;}
+    const btn=document.getElementById('wallet-btn');
+    const rect=btn.getBoundingClientRect();
+    const dd=document.createElement('div');
+    dd.id='wallet-dropdown';
+    dd.style.cssText='position:fixed;top:'+(rect.bottom+6)+'px;right:'+(window.innerWidth-rect.right)+'px;'
+      +'background:#222;border:0.5px solid #444;border-radius:8px;padding:6px;z-index:200;min-width:180px;box-shadow:0 8px 24px rgba(0,0,0,0.5);';
+    dd.innerHTML=
+      '<div style="font-size:11px;color:#666;padding:6px 10px 8px;border-bottom:0.5px solid #333;">'+walletAddress.slice(0,6)+'...'+walletAddress.slice(-4)+'</div>'+
+      '<button onclick="copyWallet()" style="display:block;width:100%;text-align:left;padding:8px 10px;background:none;border:none;color:#aaa;font-size:12px;cursor:pointer;border-radius:4px;" onmouseover="this.style.background=\'#2a2a2a\'" onmouseout="this.style.background=\'none\'">📋 Copy address</button>'+
+      '<button onclick="disconnectWallet()" style="display:block;width:100%;text-align:left;padding:8px 10px;background:none;border:none;color:#E63946;font-size:12px;cursor:pointer;border-radius:4px;" onmouseover="this.style.background=\'#2a2a2a\'" onmouseout="this.style.background=\'none\'">⏏️ Disconnect</button>';
+    document.body.appendChild(dd);
+    setTimeout(()=>document.addEventListener('click',function removeDD(e){if(!dd.contains(e.target)&&e.target!==btn){dd.remove();document.removeEventListener('click',removeDD);}},true),10);
+    return;
+  }
   let eth=getEthereum();
   if(!eth){
     await new Promise(r=>setTimeout(r,400));
@@ -833,6 +858,17 @@ async function handleWalletClick(){
     if(e&&e.code===4001)toast('Connection cancelled');
     else toast('Could not connect: '+((e&&e.message)||'unknown error'));
   }
+}
+function disconnectWallet(){
+  document.getElementById('wallet-dropdown')?.remove();
+  walletAddress=null;
+  myNFTData=[];
+  updateWalletUI();
+  toast('Disconnected');
+}
+function copyWallet(){
+  document.getElementById('wallet-dropdown')?.remove();
+  navigator.clipboard?.writeText(walletAddress).then(()=>toast('Address copied!'));
 }
 function updateWalletUI(){
   const btn=document.getElementById('wallet-btn');
@@ -871,6 +907,19 @@ async function loadPrice(){
     const perEl=document.getElementById('price-per');
     if(perEl)perEl.textContent=priceStr;
     updateTotalPrice();
+  }catch(e){}
+  // Load chain stats for the home page
+  try{
+    const c=getContract();
+    const MAX=10000;
+    const minted=Number(await c.totalMinted());
+    const supply=Number(await c.totalSupply());
+    const burned=minted-supply;
+    const remaining=MAX-minted;
+    const remEl=document.getElementById('stat-remaining');
+    const burnEl=document.getElementById('stat-burned');
+    if(remEl)remEl.textContent=remaining.toLocaleString();
+    if(burnEl)burnEl.textContent=burned.toLocaleString();
   }catch(e){}
 }
 
