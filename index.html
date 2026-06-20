@@ -8,40 +8,209 @@
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
-  /* Normies-inspired palette */
-  --normie-bg:    #6B8FA0;  /* steel blue-gray – hero/nav */
-  --normie-warm:  #D4B87A;  /* golden tan – accent */
-  --normie-lgray: #C8C8C8;  /* light gray */
-  --normie-mgray: #6B6B6B;  /* mid gray */
-  --normie-dark:  #252525;  /* near black outline */
-  --normie-lav:   #C4B5D0;  /* lavender */
-
-  /* UI tokens */
-  --bg:       #F8F6F2;      /* warm off-white page bg */
-  --bg2:      #F0EDE8;      /* card bg */
-  --bg3:      #E8E4DE;      /* hover */
-  --bg4:      #DDD8D0;      /* pressed */
-  --border:   #E0DBD4;      /* subtle border */
-  --border2:  #C8C2B8;      /* stronger border */
-  --text:     #252525;      /* primary text = normie outline */
-  --text2:    #6B6B6B;      /* secondary = mid gray */
-  --text3:    #A0988C;      /* tertiary */
-  --accent:   #6B8FA0;      /* steel blue = normie bg */
-  --accent2:  #D4B87A;      /* warm golden */
-  --accent3:  #C4B5D0;      /* lavender */
-
-  /* NFT palette (16 colors) */
-  --c1:#E63946; --c2:#F4A261; --c3:#E9C46A; --c4:#2A9D8F;
-  --c5:#264653; --c6:#A8DADC; --c7:#457B9D; --c8:#1D3557;
-  --c9:#F1FAEE; --c10:#C8B6FF; --c11:#FF6B6B; --c12:#FFE66D;
-  --c13:#6BCB77; --c14:#4D96FF; --c15:#FF6FC8; --c16:#111111;
-
-  --max: 860px;
+  --bg:#1a1a1a; --bg2:#222; --bg3:#2a2a2a; --bg4:#333;
+  --border:#2a2a2a; --border2:#333; --border3:#444;
+  --text:#f0f0f0; --text2:#888; --text3:#444;
+  --accent:#6B8FA0; --accent2:#D4B87A; --accent3:#C4B5D0;
+  --max:860px;
+  --c1:#E63946;--c2:#F4A261;--c3:#E9C46A;--c4:#2A9D8F;
+  --c5:#264653;--c6:#A8DADC;--c7:#457B9D;--c8:#1D3557;
+  --c9:#F1FAEE;--c10:#C8B6FF;--c11:#FF6B6B;--c12:#FFE66D;
+  --c13:#6BCB77;--c14:#4D96FF;--c15:#FF6FC8;--c16:#111111;
 }
-html { scroll-behavior: smooth; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
-.wrap { max-width: var(--max); margin: 0 auto; padding: 0 20px; }
-nav { border-bottom: none; background: var(--normie-bg); position: sticky; top: 0; z-index: 100; }
+html { scroll-behavior:smooth; }
+body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--bg); color:var(--text); }
+.wrap { max-width:var(--max); margin:0 auto; padding:0 20px; }
+
+/* NAV */
+nav { border-bottom:0.5px solid var(--border2); background:rgba(26,26,26,0.97); position:sticky; top:0; z-index:100; backdrop-filter:blur(8px); }
+.nav-inner { max-width:var(--max); margin:0 auto; padding:0 24px; height:52px; display:flex; align-items:center; justify-content:space-between; }
+.nav-logo { font-size:18px; font-weight:900; letter-spacing:-1px; cursor:pointer; color:var(--accent); }
+.logo-s,.logo-t,.logo-i,.logo-x,.logo-dot { color:var(--accent); }
+.nav-links { display:flex; gap:24px; align-items:center; }
+.nav-links a { font-size:12px; color:var(--text3); text-decoration:none; cursor:pointer; transition:color 0.15s; letter-spacing:0.3px; }
+.nav-links a:hover { color:var(--text); }
+.nav-menu-btn { display:none; background:none; border:none; cursor:pointer; font-size:20px; color:var(--text2); }
+.btn-wallet { font-size:12px; font-weight:600; padding:6px 14px; border:0.5px solid var(--border3); border-radius:4px; background:transparent; color:var(--text2); cursor:pointer; transition:all 0.15s; display:flex; align-items:center; gap:6px; }
+.btn-wallet:hover { color:var(--text); border-color:var(--text3); }
+.btn-wallet.connected { border-color:var(--accent); color:var(--accent); }
+.wallet-dot { width:6px; height:6px; border-radius:50%; background:currentColor; }
+.mobile-nav { display:none; background:var(--bg2); border-bottom:0.5px solid var(--border2); padding:10px 24px; flex-direction:column; }
+.mobile-nav a { font-size:14px; color:var(--text2); padding:10px 0; cursor:pointer; border-bottom:0.5px solid var(--border); }
+.mobile-nav.open { display:flex; }
+
+/* HERO */
+.hero { padding:72px 0 56px; border-bottom:0.5px solid var(--border2); }
+.hero-inner { max-width:var(--max); margin:0 auto; padding:0 24px; }
+.hero-eyebrow { font-size:10px; letter-spacing:3px; text-transform:uppercase; color:var(--text3); margin-bottom:22px; }
+.hero-title { font-size:clamp(38px,7vw,62px); font-weight:900; letter-spacing:-3px; line-height:0.92; color:var(--text); margin-bottom:22px; }
+.hero-sub { font-size:15px; color:var(--text2); line-height:1.7; max-width:420px; margin-bottom:32px; }
+.hero-sub2 { display:none; }
+.hero-actions { display:flex; gap:10px; margin-bottom:48px; flex-wrap:wrap; }
+.btn-primary { font-size:13px; font-weight:700; padding:10px 22px; background:var(--accent); color:#fff; border:none; border-radius:4px; cursor:pointer; transition:all 0.15s; letter-spacing:0.2px; }
+.btn-primary:hover { background:#5A7A90; }
+.btn-outline { font-size:13px; padding:10px 22px; background:transparent; color:var(--text2); border:0.5px solid var(--border3); border-radius:4px; cursor:pointer; transition:all 0.15s; }
+.btn-outline:hover { color:var(--text); border-color:var(--text3); }
+
+/* TICKER */
+.hero-ticker { display:flex; gap:12px; overflow-x:auto; padding-bottom:4px; }
+.hero-ticker::-webkit-scrollbar { display:none; }
+.ticker-card { flex-shrink:0; border:0.5px solid var(--border2); border-radius:8px; overflow:hidden; cursor:pointer; transition:border-color 0.15s; }
+.ticker-card:hover { border-color:var(--accent); }
+.ticker-card canvas { display:block; image-rendering:pixelated; width:160px; height:160px; }
+.ticker-footer { padding:6px 10px; display:flex; justify-content:space-between; background:var(--bg2); }
+.ticker-id { font-size:10px; color:var(--text3); font-weight:600; }
+.ticker-label { font-size:9px; color:var(--text3); letter-spacing:0.5px; text-transform:uppercase; }
+
+/* STATS */
+.stats-bar { border-bottom:0.5px solid var(--border2); }
+.stats-inner { max-width:var(--max); margin:0 auto; padding:0 24px; display:grid; grid-template-columns:repeat(4,1fr); }
+.stat { padding:22px 0; border-right:0.5px solid var(--border2); padding-right:20px; margin-right:20px; }
+.stat:last-child { border-right:none; margin-right:0; }
+.stat-val { font-size:22px; font-weight:800; letter-spacing:-1px; color:var(--accent); }
+.stat-lbl { font-size:10px; color:var(--text3); margin-top:3px; letter-spacing:1px; text-transform:uppercase; }
+
+/* MANIFESTO */
+.manifesto { border-bottom:0.5px solid var(--border2); }
+.manifesto-inner { max-width:var(--max); margin:0 auto; padding:56px 24px; display:grid; grid-template-columns:1fr 1fr; gap:48px; }
+.manifesto h2 { font-size:clamp(22px,4vw,34px); font-weight:800; letter-spacing:-1px; line-height:1.1; margin-bottom:20px; }
+.manifesto p { font-size:14px; color:var(--text2); line-height:1.8; margin-bottom:14px; }
+.manifesto-right { display:flex; flex-direction:column; gap:12px; }
+.manifesto-fact { padding:16px 18px; border:0.5px solid var(--border2); border-radius:8px; background:var(--bg2); }
+.fact-label { font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text3); margin-bottom:6px; }
+.fact-val { font-size:15px; font-weight:700; color:var(--text); margin-bottom:4px; }
+.fact-desc { font-size:12px; color:var(--text2); line-height:1.55; }
+
+/* HOW */
+.how { border-bottom:0.5px solid var(--border2); }
+.how-inner { max-width:var(--max); margin:0 auto; padding:48px 24px; }
+.section-label { font-size:10px; letter-spacing:3px; text-transform:uppercase; color:var(--text3); margin-bottom:24px; }
+.how-steps { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+.how-step { padding:24px 20px; border:0.5px solid var(--border2); border-radius:8px; background:var(--bg2); }
+.how-step-num { font-size:10px; color:var(--text3); margin-bottom:12px; letter-spacing:1px; }
+.how-step h3 { font-size:15px; font-weight:700; margin-bottom:10px; color:var(--text); }
+.how-step p { font-size:13px; color:var(--text2); line-height:1.65; }
+
+/* SECTION */
+.section { border-bottom:0.5px solid var(--border2); }
+.section-inner { max-width:var(--max); margin:0 auto; padding:36px 24px; }
+
+/* GALLERY */
+.gallery-filters { display:flex; gap:6px; margin-bottom:20px; flex-wrap:wrap; }
+.filter-btn { font-size:11px; padding:5px 12px; border-radius:4px; border:0.5px solid var(--border2); background:transparent; color:var(--text3); cursor:pointer; transition:all 0.15s; }
+.filter-btn.active { border-color:var(--text); background:var(--bg3); color:var(--text); }
+.nft-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+.nft-card { border:0.5px solid var(--border2); border-radius:8px; overflow:hidden; cursor:pointer; transition:border-color 0.15s; background:var(--bg2); }
+.nft-card:hover { border-color:var(--border3); }
+.nft-card canvas { display:block; width:100%; image-rendering:pixelated; }
+.nft-footer { padding:9px 12px; display:flex; justify-content:space-between; }
+.nft-footer-id { font-size:11px; font-weight:600; color:var(--text); }
+.nft-footer-price { font-size:11px; color:var(--text3); }
+
+/* MINT */
+.mint-page-inner { max-width:var(--max); margin:0 auto; padding:36px 24px; display:grid; grid-template-columns:1fr 1fr; gap:36px; align-items:start; }
+.mint-visual { position:relative; width:300px; height:300px; }
+.mint-visual canvas,.mint-visual img { display:block; image-rendering:pixelated; border-radius:10px; width:300px; height:300px; background:var(--bg2); border:0.5px solid var(--border2); }
+.mint-info { display:flex; flex-direction:column; gap:14px; }
+.mint-rows { background:var(--bg2); border:0.5px solid var(--border2); border-radius:10px; overflow:hidden; }
+.mint-row { display:flex; justify-content:space-between; align-items:center; padding:12px 16px; border-bottom:0.5px solid var(--border); }
+.mint-row:last-child { border-bottom:none; }
+.mint-row .lbl { font-size:12px; color:var(--text3); }
+.mint-row .val { font-size:13px; font-weight:600; color:var(--text); }
+.mint-cta { width:100%; padding:13px; border:none; border-radius:8px; background:var(--accent); color:#fff; font-size:14px; font-weight:800; cursor:pointer; transition:all 0.15s; }
+.mint-cta:hover { background:#5A7A90; }
+.mint-cta:disabled { background:var(--bg3); color:var(--text3); cursor:not-allowed; }
+.mint-spinner-overlay { position:absolute; inset:0; background:rgba(26,26,26,0.88); border-radius:10px; display:none; flex-direction:column; align-items:center; justify-content:center; gap:12px; }
+.mint-spinner-overlay.active { display:flex; }
+.mint-spinner-ring { width:40px; height:40px; border:3px solid var(--border3); border-top-color:var(--accent); border-radius:50%; animation:spin 0.9s linear infinite; }
+.mint-spinner-text { font-size:12px; color:var(--text2); }
+@keyframes spin { to { transform:rotate(360deg); } }
+.reveal-pop { animation:pop 0.4s cubic-bezier(0.34,1.56,0.64,1); }
+@keyframes pop { from { transform:scale(0.85); opacity:0; } to { transform:scale(1); opacity:1; } }
+.reveal-title { font-size:22px; font-weight:800; letter-spacing:-0.5px; }
+.mint-desc { font-size:13px; color:var(--text2); line-height:1.65; }
+.attr-pill { font-size:11px; background:var(--bg3); border:0.5px solid var(--border2); padding:3px 8px; border-radius:4px; color:var(--text2); }
+.color-dot { display:inline-block; width:8px; height:8px; border-radius:50%; vertical-align:middle; margin-right:4px; }
+.stick-attrs { display:flex; gap:5px; flex-wrap:wrap; }
+.mint-actions { display:flex; gap:10px; }
+
+/* BURN */
+.burn-col { flex:1; }
+.burn-list { display:flex; flex-direction:column; gap:6px; }
+.burn-pick { border:1.5px solid var(--border2); border-radius:8px; overflow:hidden; cursor:pointer; transition:border-color 0.15s; background:var(--bg2); }
+.burn-pick:hover { border-color:var(--border3); }
+.burn-pick.sel-keep { border-color:var(--accent); }
+.burn-pick.sel-burn { border-color:var(--c1); }
+.pick-tag { font-size:10px; font-weight:700; text-align:center; padding:3px; color:#fff; letter-spacing:1px; text-transform:uppercase; }
+.burn-pick.sel-keep .pick-tag { background:var(--accent); }
+.burn-pick.sel-burn .pick-tag { background:var(--c1); }
+.burn-pick canvas { display:block; width:100%; image-rendering:pixelated; }
+.burn-confirm { margin-top:20px; text-align:center; }
+.burn-go { padding:11px 22px; background:var(--c1); color:#fff; border:none; border-radius:6px; font-size:14px; font-weight:700; cursor:pointer; }
+.burn-go:hover { opacity:0.88; }
+
+/* EDITOR */
+.editor-wrap { display:grid; grid-template-columns:1fr 240px; gap:20px; align-items:start; }
+.editor-canvas-area { border:0.5px solid var(--border2); border-radius:12px; background:var(--bg2); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; gap:12px; }
+.editor-canvas-area canvas { image-rendering:pixelated; border:0.5px solid var(--border2); border-radius:8px; max-width:100%; }
+.editor-side { display:flex; flex-direction:column; gap:10px; }
+#editor-stick-list { max-height:200px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; }
+.tool-tabs { display:flex; gap:6px; margin-bottom:8px; }
+.tool-tab { flex:1; padding:8px; font-size:12px; font-weight:600; border-radius:6px; border:0.5px solid var(--border2); background:var(--bg3); color:var(--text3); cursor:pointer; text-align:center; transition:all 0.15s; }
+.tool-tab.active.sticks-tab { border-color:var(--accent); background:var(--accent); color:#fff; }
+.tool-tab.active.blocks-tab { border-color:var(--c1); background:var(--c1); color:#fff; }
+.tetro-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+.tetro-btn { border:0.5px solid var(--border2); border-radius:6px; padding:5px 3px 3px; cursor:pointer; background:var(--bg3); transition:all 0.15s; display:flex; flex-direction:column; align-items:center; }
+.tetro-btn:hover { border-color:var(--border3); }
+.tetro-btn.active { border-color:var(--c1); background:rgba(230,57,70,0.1); }
+.rot-btns { display:flex; gap:4px; }
+.rot-btn { flex:1; padding:6px 4px; font-size:11px; border-radius:6px; border:0.5px solid var(--border2); background:var(--bg3); cursor:pointer; text-align:center; font-weight:600; color:var(--text3); transition:all 0.12s; }
+.rot-btn.active { border-color:var(--accent); background:var(--accent); color:#fff; }
+.editor-section { font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--text3); margin-bottom:6px; }
+.save-btn { width:100%; padding:11px; border-radius:6px; border:none; background:var(--accent); color:#fff; font-size:13px; font-weight:700; cursor:pointer; transition:all 0.15s; }
+.save-btn:hover { background:#5A7A90; }
+.save-btn:disabled { background:var(--bg3); color:var(--text3); cursor:not-allowed; }
+.burn-card { background:rgba(230,57,70,0.07); border:0.5px solid rgba(230,57,70,0.2); border-radius:8px; padding:14px; }
+.burn-card h4 { font-size:13px; color:var(--c1); margin-bottom:5px; }
+.burn-card p { font-size:11px; color:var(--text2); line-height:1.5; margin-bottom:10px; }
+.burn-btn { width:100%; padding:8px; border-radius:6px; border:0.5px solid var(--c1); background:transparent; color:var(--c1); font-size:12px; font-weight:600; cursor:pointer; transition:all 0.15s; }
+.burn-btn:hover { background:var(--c1); color:#fff; }
+.block-list { display:flex; flex-direction:column; gap:5px; max-height:120px; overflow-y:auto; }
+.editor-hint { font-size:11px; color:var(--text3); }
+.editor-stick-card { border:0.5px solid var(--border2); border-radius:6px; padding:10px 13px; cursor:pointer; background:var(--bg2); }
+.editor-stick-card.active { border-color:var(--accent); }
+.stick-label { font-size:10px; color:var(--text3); letter-spacing:0.8px; text-transform:uppercase; margin-bottom:5px; }
+.edit-status { display:flex; align-items:center; gap:10px; padding:11px 14px; border-radius:6px; margin-bottom:18px; font-size:12px; }
+.edit-status.has-credit { background:rgba(107,143,160,0.1); border:0.5px solid rgba(107,143,160,0.3); color:var(--accent); }
+.edit-status.no-credit { background:var(--bg2); border:0.5px solid var(--border2); color:var(--text3); }
+.edit-status .credit-num { font-size:18px; font-weight:800; }
+
+/* MY NFTS */
+.mynft-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+.mynft-card { border:0.5px solid var(--border2); border-radius:10px; overflow:hidden; cursor:pointer; transition:all 0.15s; background:var(--bg2); }
+.mynft-card:hover { border-color:var(--border3); transform:translateY(-2px); }
+.mynft-card canvas { display:block; width:100%; image-rendering:pixelated; }
+.mynft-footer { padding:10px 12px; display:flex; justify-content:space-between; align-items:center; }
+.mynft-info h4 { font-size:13px; font-weight:600; }
+.mynft-info span { font-size:11px; color:var(--text3); }
+.edit-btn { font-size:11px; padding:5px 12px; border:0.5px solid var(--border2); border-radius:4px; background:var(--bg3); color:var(--text2); cursor:pointer; transition:all 0.15s; }
+.edit-btn:hover { border-color:var(--border3); color:var(--text); }
+
+/* MISC */
+.connect-prompt { text-align:center; padding:64px 20px; }
+.connect-prompt h2 { font-size:22px; font-weight:700; margin-bottom:10px; }
+.connect-prompt p { font-size:14px; color:var(--text2); margin-bottom:24px; max-width:340px; margin-left:auto; margin-right:auto; }
+.toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(8px); background:var(--bg3); border:0.5px solid var(--border2); color:var(--text); padding:10px 18px; border-radius:6px; font-size:13px; opacity:0; transition:all 0.22s; pointer-events:none; z-index:999; white-space:nowrap; box-shadow:0 8px 24px rgba(0,0,0,0.5); }
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+footer { border-top:0.5px solid var(--border2); }
+.footer-inner { max-width:var(--max); margin:0 auto; padding:24px 24px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; }
+.footer-logo { font-size:15px; font-weight:800; color:var(--accent); }
+.footer-links a { font-size:12px; color:var(--text3); text-decoration:none; cursor:pointer; margin-left:20px; }
+.footer-links a:hover { color:var(--text2); }
+.footer-note { font-size:11px; color:var(--text3); }
+.dir-btn { flex:1; padding:8px 0; border:0.5px solid var(--border2); border-radius:4px; background:var(--bg3); color:var(--text2); font-size:15px; cursor:pointer; transition:all 0.15s; }
+.dir-btn.active { border-color:var(--accent); background:var(--accent); color:#fff; }
+.mint-price-display { color:var(--accent2); font-weight:700; }
 .nav-inner { max-width: var(--max); margin: 0 auto; padding: 0 20px; height: 56px; display: flex; align-items: center; justify-content: space-between; }
 .nav-logo { font-size: 22px; font-weight: 800; letter-spacing: -1.5px; cursor: pointer; color: #fff; }
 .logo-s{color:#F0F0F0} .logo-t{color:#E8E0D0} .logo-i{color:#C4B5D0} .logo-x{color:#B5C4CC} .logo-dot{color:rgba(255,255,255,0.5)}
@@ -466,32 +635,31 @@ footer { border-top: 0.5px solid #eee; }
 <div id="page-home" class="page active">
   <div class="hero">
     <div class="hero-inner">
-      <div class="hero-eyebrow">On-chain generative art &middot; Base</div>
-      <div class="hero-title">Sticks &amp; Tetrix.<br>Infinite <em id="hero-word" style="color:var(--c1)">creativity.</em></div>
-      <div class="hero-sub">Each Pixl is a 24×24 pixel canvas with random lines and Tetromino blocks — stored entirely on Base, rendered from the contract, owned by you.</div>
-      <div class="hero-sub2">Burn to merge. Edit to arrange. No servers. No IPFS. 100% on-chain.</div>
+      <div class="hero-eyebrow">On-chain · Base · CC0</div>
+      <div class="hero-title">Pixel art,<br><span style="color:#6B8FA0">on-chain.</span><br>Forever.</div>
+      <div class="hero-sub">Mint sticks and Tetrominos. Burn to combine. Create anything — stored entirely on Base.</div>
       <div class="hero-actions">
-        <button class="btn-primary" onclick="showPage('mint')">Mint a Pixl</button>
-        <button class="btn-outline" onclick="showPage('gallery')">Browse collection</button>
+        <button class="btn-primary" onclick="showPage('mint')">Mint a Pixl →</button>
+        <button class="btn-outline" onclick="showPage('gallery')">Browse gallery</button>
       </div>
       <div class="hero-ticker" id="hero-ticker"></div>
     </div>
   </div>
   <div class="stats-bar">
     <div class="stats-inner">
-      <div class="stat"><div class="stat-val" style="color:var(--c1)">10,000</div><div class="stat-lbl">Total supply</div></div>
-      <div class="stat"><div class="stat-val" style="color:var(--c4)">TBD</div><div class="stat-lbl">Mint price</div></div>
-      <div class="stat"><div class="stat-val" style="color:var(--c2)">50&times;50</div><div class="stat-lbl">Pixel canvas</div></div>
-      <div class="stat"><div class="stat-val" style="color:var(--c10)">100%</div><div class="stat-lbl">On-chain</div></div>
+      <div class="stat"><div class="stat-val">10,000</div><div class="stat-lbl">Max Supply</div></div>
+      <div class="stat"><div class="stat-val">0.001Ξ</div><div class="stat-lbl">Mint Price</div></div>
+      <div class="stat"><div class="stat-val">24×24</div><div class="stat-lbl">Pixel Canvas</div></div>
+      <div class="stat"><div class="stat-val">7</div><div class="stat-lbl">Tetromino Types</div></div>
     </div>
   </div>
   <div class="manifesto">
     <div class="manifesto-inner">
       <div>
         <h2>Art that lives<br>on the chain.</h2>
-        <p>Most NFT projects store their images on IPFS or a centralized server. If the team disappears, the art disappears. Pixl is different.</p>
-        <p>Every pixel, every color, every stick position is encoded directly into the smart contract on Base. The SVG is generated on-chain, on demand, every time. There is no image to host. There is nothing to lose.</p>
-        <p>When you burn two Pixl together, you get all elements in one canvas &mdash; yours to arrange however you like. Keep burning, keep building. The chain remembers everything.</p>
+        <p>Most NFT projects store images on IPFS or a centralized server. If the team disappears, the art disappears. Pixl is different.</p>
+        <p>Every pixel, every color, every stick position is encoded directly into the smart contract on Base. The SVG is generated on-chain, on demand, every time. No image to host. Nothing to lose.</p>
+        <p>Burn two Pixl together and get all elements in one canvas — yours to arrange however you like. Keep burning, keep building. The chain remembers everything.</p>
       </div>
       <div class="manifesto-right">
         <div class="manifesto-fact">
@@ -501,13 +669,13 @@ footer { border-top: 0.5px solid #eee; }
         </div>
         <div class="manifesto-fact">
           <div class="fact-label">Licence</div>
-          <div class="fact-val">CC0 &mdash; public domain</div>
-          <div class="fact-desc">The art, the contracts, the code &mdash; all belong to everyone. Build on Pixl freely.</div>
+          <div class="fact-val">CC0 — Public Domain</div>
+          <div class="fact-desc">The art, the contracts, the code — all belong to everyone.</div>
         </div>
         <div class="manifesto-fact">
           <div class="fact-label">Blockchain</div>
-          <div class="fact-val">Base Mainnet</div>
-          <div class="fact-desc">Fast, cheap, and backed by Coinbase. Low gas means burning and editing stays accessible.</div>
+          <div class="fact-val">Base</div>
+          <div class="fact-desc">Fast, cheap, backed by Coinbase. Low gas means burning stays accessible.</div>
         </div>
       </div>
     </div>
@@ -517,22 +685,19 @@ footer { border-top: 0.5px solid #eee; }
       <div class="section-label">How it works</div>
       <div class="how-steps">
         <div class="how-step">
-          <div class="how-accent" style="background:#fff0f0; border:2px solid var(--c1);"></div>
-          <div class="how-step-num">01 &mdash; Mint</div>
-          <h3>You get sticks + tetrominos.</h3>
-          <p>Each Pixl is minted with three randomly generated pixel lines &mdash; a color from the 16-color palette, a length between 5 and 15 pixels, and one of four directions.</p>
+          <div class="how-step-num">01 — Mint</div>
+          <h3>Random elements, VRF-powered.</h3>
+          <p>Each Pixl is minted with random sticks and Tetrominos — color, length, type all chosen by Chainlink VRF. No two are alike.</p>
         </div>
         <div class="how-step">
-          <div class="how-accent" style="background:#fff8ee; border:2px solid var(--c2);"></div>
-          <div class="how-step-num">02 &mdash; Burn</div>
-          <h3>Burn two, get one.</h3>
-          <p>Sacrifice two Pixl and receive a single new one carrying all elements. Burn again. Stack more. The more you burn, the richer your canvas becomes.</p>
+          <div class="how-step-num">02 — Burn</div>
+          <h3>Burn two, get one richer.</h3>
+          <p>Sacrifice two Pixl and receive one carrying all elements. Burn again. Stack more. The more you burn, the richer your canvas.</p>
         </div>
         <div class="how-step">
-          <div class="how-accent" style="background:#edfaf5; border:2px solid var(--c4);"></div>
-          <div class="how-step-num">03 &mdash; Create</div>
+          <div class="how-step-num">03 — Create</div>
           <h3>Arrange. Commit. Own.</h3>
-          <p>Use the on-chain editor to place every stick exactly where you want it. Save the arrangement to the contract. That&rsquo;s your art, permanently.</p>
+          <p>Use the on-chain editor to place every element exactly where you want. Save to the contract. That's your art, permanently.</p>
         </div>
       </div>
     </div>
@@ -540,7 +705,7 @@ footer { border-top: 0.5px solid #eee; }
   <div class="section">
     <div class="section-inner">
       <div class="section-label">What you can build</div>
-      <p style="font-size:14px;color:#666;line-height:1.7;margin-bottom:24px;max-width:480px;">Burn enough Pixl and the sticks start to add up. Here's what collectors have composed on a single 50×50 canvas.</p>
+      <p style="font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:24px;max-width:480px;">Burn enough Pixl and the elements start to add up. Here's what's possible on a single 24×24 canvas.</p>
       <div class="nft-grid" id="home-gallery"></div>
     </div>
   </div>
@@ -1254,12 +1419,164 @@ function handleEditorBlockClick(gridX, gridY){
 }
 
 function handleBurn(){ showPage('burn'); }
+
+// ── Masterpiece pixel art drawings ──────────────────────────────────────
+const G24=24,SC8=8,BG_NPC='#6B8FA0';
+const NPC={bk:'#252525',mg:'#6B6B6B',lg:'#C8C8C8',wh:'#F0F0F0',tn:'#D4B87A',dt:'#BEA865',lv:'#C4B5D0',pu:'#9080A0',db:'#4A6B80',bg:'#B5C4CC',br:'#8A7060',cr:'#E8E0D0',dk:'#1C1C1C',gr:'#A0A0A0',be:'#D0C0A8',st:'#5A7A90'};
+function npcCv(){const cv=document.createElement('canvas');cv.width=G24*SC8;cv.height=G24*SC8;const ctx=cv.getContext('2d');ctx.fillStyle=BG_NPC;ctx.fillRect(0,0,cv.width,cv.height);return{cv,ctx};}
+function pp24(ctx,x,y,c){if(x<0||x>=G24||y<0||y>=G24)return;ctx.fillStyle=c;ctx.fillRect(x*SC8,y*SC8,SC8,SC8);}
+function row24(ctx,x,y,w,c){for(let i=0;i<w;i++)pp24(ctx,x+i,y,c);}
+function col24(ctx,x,y,h,c){for(let i=0;i<h;i++)pp24(ctx,x,y+i,c);}
+function rect24(ctx,x,y,w,h,c){for(let dy=0;dy<h;dy++)row24(ctx,x,y+dy,w,c);}
+
+function drawMohawk(){
+  const{cv,ctx}=npcCv();
+  col24(ctx,11,1,4,NPC.dk);col24(ctx,12,0,5,NPC.dk);col24(ctx,13,1,4,NPC.dk);
+  pp24(ctx,10,2,NPC.dk);pp24(ctx,14,2,NPC.dk);
+  rect24(ctx,9,5,6,8,NPC.lg);rect24(ctx,8,7,8,5,NPC.lg);
+  rect24(ctx,13,6,3,6,NPC.mg);
+  rect24(ctx,9,8,2,2,NPC.dk);rect24(ctx,13,8,2,2,NPC.dk);
+  pp24(ctx,9,8,NPC.mg);pp24(ctx,13,8,NPC.mg);
+  col24(ctx,12,10,2,NPC.mg);
+  row24(ctx,10,13,4,NPC.dk);
+  rect24(ctx,11,13,2,3,NPC.lg);
+  rect24(ctx,8,16,8,6,NPC.bg);
+  pp24(ctx,8,9,NPC.lg);pp24(ctx,15,9,NPC.lg);
+  pp24(ctx,8,10,NPC.lg);pp24(ctx,15,10,NPC.lg);
+  row24(ctx,9,16,2,NPC.wh);row24(ctx,13,16,2,NPC.wh);
+  return cv;
+}
+
+function drawBeanie(){
+  const{cv,ctx}=npcCv();
+  rect24(ctx,8,3,8,5,NPC.dt);row24(ctx,8,7,8,NPC.br);
+  pp24(ctx,9,3,NPC.cr);pp24(ctx,14,3,NPC.cr);
+  rect24(ctx,9,7,6,8,NPC.tn);rect24(ctx,8,9,8,5,NPC.tn);
+  rect24(ctx,12,8,3,5,NPC.dt);
+  rect24(ctx,9,9,2,2,NPC.dk);rect24(ctx,13,9,2,2,NPC.dk);
+  pp24(ctx,9,9,NPC.wh);pp24(ctx,13,9,NPC.wh);
+  pp24(ctx,12,11,NPC.dt);
+  rect24(ctx,9,13,6,2,NPC.lg);rect24(ctx,8,12,8,2,NPC.lg);
+  row24(ctx,9,15,6,NPC.gr);
+  rect24(ctx,11,14,2,2,NPC.tn);
+  rect24(ctx,8,16,8,6,NPC.bg);
+  pp24(ctx,8,10,NPC.tn);pp24(ctx,15,10,NPC.tn);
+  return cv;
+}
+
+function drawTower(){
+  const{cv,ctx}=npcCv();
+  row24(ctx,0,22,24,NPC.st);row24(ctx,0,23,24,NPC.db);
+  rect24(ctx,8,4,8,19,NPC.bg);rect24(ctx,12,4,4,19,NPC.mg);
+  col24(ctx,11,1,3,NPC.dk);col24(ctx,12,0,4,NPC.dk);
+  [6,9,12,15,18].forEach(wy=>{rect24(ctx,9,wy,2,2,NPC.dt);pp24(ctx,9,wy,NPC.cr);});
+  [6,9,12,15,18].forEach(wy=>{rect24(ctx,13,wy,2,2,NPC.mg);});
+  row24(ctx,8,4,8,NPC.dk);row24(ctx,9,3,6,NPC.dk);
+  rect24(ctx,6,21,12,2,NPC.mg);row24(ctx,6,21,12,NPC.dk);
+  row24(ctx,0,23,24,NPC.dk);
+  return cv;
+}
+
+function drawNPCFace(){
+  const{cv,ctx}=npcCv();
+  rect24(ctx,8,4,8,13,NPC.lv);rect24(ctx,7,6,10,9,NPC.lv);
+  rect24(ctx,13,5,3,11,NPC.pu);
+  rect24(ctx,8,3,8,3,NPC.dk);row24(ctx,7,5,9,NPC.dk);col24(ctx,7,6,7,NPC.dk);
+  rect24(ctx,9,8,3,3,NPC.wh);rect24(ctx,13,8,3,3,NPC.wh);
+  pp24(ctx,10,9,NPC.dk);pp24(ctx,14,9,NPC.dk);
+  pp24(ctx,9,8,NPC.cr);pp24(ctx,13,8,NPC.cr);
+  col24(ctx,12,11,2,NPC.pu);
+  row24(ctx,10,14,4,NPC.dk);pp24(ctx,9,14,NPC.pu);pp24(ctx,14,14,NPC.pu);
+  pp24(ctx,7,9,NPC.lv);pp24(ctx,16,9,NPC.lv);pp24(ctx,7,10,NPC.lv);pp24(ctx,16,10,NPC.lv);
+  rect24(ctx,11,17,2,2,NPC.lv);
+  rect24(ctx,7,19,10,5,NPC.bg);row24(ctx,10,19,4,NPC.wh);
+  return cv;
+}
+
+function drawShades(){
+  const{cv,ctx}=npcCv();
+  [8,10,12,14].forEach((hx,s)=>{col24(ctx,hx,2+Math.abs(s-2),5-Math.abs(s-2),NPC.dk);});
+  rect24(ctx,9,7,6,8,NPC.mg);rect24(ctx,8,8,8,6,NPC.mg);rect24(ctx,13,8,3,6,NPC.dk);
+  rect24(ctx,9,9,3,2,NPC.dk);rect24(ctx,13,9,3,2,NPC.dk);
+  row24(ctx,12,9,1,NPC.dk);pp24(ctx,8,9,NPC.dk);pp24(ctx,16,9,NPC.dk);
+  pp24(ctx,10,9,NPC.lg);pp24(ctx,11,9,NPC.lg);pp24(ctx,14,9,NPC.lg);pp24(ctx,15,9,NPC.lg);
+  col24(ctx,12,11,2,NPC.dk);
+  row24(ctx,11,13,3,NPC.dk);pp24(ctx,14,13,NPC.mg);
+  rect24(ctx,11,15,2,2,NPC.mg);
+  rect24(ctx,8,17,8,5,NPC.dk);
+  row24(ctx,9,17,2,NPC.lg);row24(ctx,13,17,2,NPC.lg);
+  pp24(ctx,8,10,NPC.mg);pp24(ctx,15,10,NPC.mg);
+  return cv;
+}
+
+function drawHouse(){
+  const{cv,ctx}=npcCv();
+  row24(ctx,0,21,24,NPC.mg);row24(ctx,0,22,24,NPC.dk);
+  rect24(ctx,4,12,16,10,NPC.cr);rect24(ctx,14,12,6,10,NPC.lg);
+  for(let r=0;r<6;r++){row24(ctx,4+r,6+r,16-r*2,NPC.dt);}
+  for(let r=0;r<6;r++){pp24(ctx,4+r,6+r,NPC.dk);pp24(ctx,19-r,6+r,NPC.dk);}
+  row24(ctx,10,6,4,NPC.dk);
+  rect24(ctx,6,3,3,5,NPC.mg);row24(ctx,6,3,3,NPC.dk);pp24(ctx,7,2,NPC.lg);
+  rect24(ctx,10,15,4,7,NPC.db);pp24(ctx,13,18,NPC.cr);row24(ctx,10,15,4,NPC.dk);
+  rect24(ctx,5,14,4,4,NPC.tn);pp24(ctx,5,14,NPC.cr);pp24(ctx,6,14,NPC.cr);
+  rect24(ctx,15,14,4,4,NPC.tn);pp24(ctx,15,14,NPC.cr);pp24(ctx,16,14,NPC.cr);
+  row24(ctx,4,12,16,NPC.dk);col24(ctx,4,12,10,NPC.dk);col24(ctx,19,12,10,NPC.dk);
+  return cv;
+}
+
+function drawBlonde(){
+  const{cv,ctx}=npcCv();
+  rect24(ctx,7,2,10,7,NPC.dt);rect24(ctx,6,4,12,5,NPC.dt);
+  col24(ctx,6,4,4,NPC.dt);col24(ctx,17,4,4,NPC.dt);
+  rect24(ctx,8,3,8,3,NPC.br);
+  rect24(ctx,8,8,8,8,NPC.tn);rect24(ctx,7,9,10,6,NPC.tn);rect24(ctx,13,9,3,6,NPC.dt);
+  rect24(ctx,9,9,2,2,NPC.dk);rect24(ctx,13,9,2,2,NPC.dk);
+  pp24(ctx,9,9,NPC.wh);pp24(ctx,13,9,NPC.wh);
+  pp24(ctx,12,11,NPC.dt);
+  row24(ctx,10,14,4,NPC.dk);pp24(ctx,9,13,NPC.dk);pp24(ctx,14,13,NPC.dk);
+  row24(ctx,10,15,4,NPC.wh);
+  rect24(ctx,11,16,2,2,NPC.tn);
+  rect24(ctx,7,18,10,5,NPC.pu);row24(ctx,9,18,6,NPC.lv);
+  pp24(ctx,11,17,NPC.lv);pp24(ctx,12,17,NPC.lv);
+  return cv;
+}
+
+function drawPunkGray(){
+  const{cv,ctx}=npcCv();
+  // flat top hair
+  rect24(ctx,8,4,8,4,NPC.dk);row24(ctx,7,7,9,NPC.dk);
+  col24(ctx,7,8,5,NPC.dk);col24(ctx,16,8,5,NPC.dk);
+  rect24(ctx,8,7,8,9,NPC.gr);rect24(ctx,7,9,10,6,NPC.gr);rect24(ctx,13,8,3,6,NPC.mg);
+  rect24(ctx,9,10,2,2,NPC.dk);rect24(ctx,13,10,2,2,NPC.dk);
+  pp24(ctx,10,10,NPC.lg);pp24(ctx,14,10,NPC.lg);
+  col24(ctx,12,12,2,NPC.dk);
+  row24(ctx,10,14,4,NPC.dk);pp24(ctx,10,15,NPC.wh);pp24(ctx,13,15,NPC.wh);
+  rect24(ctx,11,16,2,2,NPC.gr);
+  rect24(ctx,8,18,8,5,NPC.mg);row24(ctx,9,18,2,NPC.gr);row24(ctx,13,18,2,NPC.gr);
+  return cv;
+}
+
+const MASTERPIECES=[
+  {cv:drawMohawk,  label:'Mohawk Punk', id:'#0001'},
+  {cv:drawBeanie,  label:'Beanie OG',   id:'#0042'},
+  {cv:drawTower,   label:'City Tower',  id:'#0137'},
+  {cv:drawNPCFace, label:'NPC Face',    id:'#0218'},
+  {cv:drawShades,  label:'Shades Punk', id:'#0305'},
+  {cv:drawHouse,   label:'Pixel House', id:'#0411'},
+  {cv:drawBlonde,  label:'Blonde Punk', id:'#0533'},
+  {cv:drawPunkGray,label:'Gray Punk',   id:'#0667'},
+];
+
 function buildHero(){
   const wrap=document.getElementById('hero-ticker');if(!wrap)return;wrap.innerHTML='';
-  for(let i=0;i<10;i++){const c=makeThumb(makeNFT(rand(1,3)*3),56);c.style.cssText='width:56px;height:56px;image-rendering:pixelated;border:0.5px solid #eee;border-radius:6px;flex-shrink:0;';wrap.appendChild(c);}
-  const words=[{t:'possibility.',c:'#E63946'},{t:'yours.',c:'#2A9D8F'},{t:'art.',c:'#C8B6FF'},{t:'history.',c:'#F4A261'}];
-  let wi=0;
-  setInterval(()=>{wi=(wi+1)%words.length;const el=document.getElementById('hero-word');if(el){el.textContent=words[wi].t;el.style.color=words[wi].c;}},2400);
+  MASTERPIECES.forEach(m=>{
+    const cv=m.cv();
+    cv.style.cssText='display:block;width:160px;height:160px;image-rendering:pixelated;';
+    const card=document.createElement('div');card.className='ticker-card';
+    const footer=document.createElement('div');footer.className='ticker-footer';
+    footer.innerHTML='<span class="ticker-id">'+m.id+'</span><span class="ticker-label">'+m.label+'</span>';
+    card.appendChild(cv);card.appendChild(footer);wrap.appendChild(card);
+  });
 }
 const homeGalleryData=Array.from({length:10},(_,i)=>({id:i+1,sticks:makeNFT(rand(1,3)*3),price:'0.0'+rand(1,9)}));
 function buildHomeGallery(){
