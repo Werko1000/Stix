@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pixl – On-chain pixel art</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%230a0a0a'/><line x1='20' y1='50' x2='80' y2='50' stroke='%23E63946' stroke-width='8' stroke-linecap='round'/><line x1='50' y1='20' x2='50' y2='80' stroke='%232A9D8F' stroke-width='8' stroke-linecap='round'/><rect x='60' y='35' width='12' height='12' fill='%23F4A261'/><rect x='60' y='50' width='12' height='12' fill='%23F4A261'/></svg>">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%236B8FA0'/><rect x='20' y='45' width='40' height='8' fill='%23F0F0F0'/><rect x='30' y='25' width='8' height='40' fill='%23C4B5D0'/><rect x='55' y='35' width='8' height='8' fill='%23D4B87A'/><rect x='65' y='35' width='8' height='8' fill='%23D4B87A'/><rect x='55' y='45' width='8' height='8' fill='%23D4B87A'/><rect x='65' y='55' width='8' height='8' fill='%23D4B87A'/></svg>">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -726,8 +726,7 @@ function showPage(id){
   if(id==='mynfts')buildMyNFTs();
   if(id==='editor')buildEditor();
   if(id==='mint')resetMint();
-  if(id==='burn')buildBurn();
-}
+  if(id==='burn')buildBurn();}
 function toast(msg){
   const el=document.getElementById('toast');
   el.innerHTML=msg;
@@ -1580,32 +1579,37 @@ async function buildMyNFTs(){
     wrap.innerHTML='<div class="connect-prompt"><h2>Your collection awaits.</h2><p>Connect your wallet to see the Pixl you own.</p><button class="btn-primary" onclick="handleWalletClick()">Connect wallet</button></div>';
     return;
   }
-  wrap.innerHTML='<div style="text-align:center;padding:40px;color:#999;font-size:13px;">Loading your Pixl from Base Sepolia…</div>';
+  wrap.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3);font-size:13px;">Loading your Pixl from Base Sepolia…</div>';
   await loadMyNFTs();
   if(myNFTData.length===0){
     wrap.innerHTML='<div class="connect-prompt"><h2>No Pixl yet.</h2><p>Mint your first Pixl to start your collection.</p><button class="btn-primary" onclick="showPage(\'mint\')">Mint a Pixl</button></div>';
     return;
   }
-  wrap.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;"><p style="font-size:13px;color:#666;">'+myNFTData.length+' Pixl in your wallet</p><button class="btn-outline" style="font-size:13px;padding:8px 18px;" onclick="showPage(\'burn\')">Burn &amp; merge →</button></div><div class="mynft-grid" id="mynft-grid"></div>';
+  wrap.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;"><p style="font-size:13px;color:var(--text2);">'+myNFTData.length+' Pixl in your wallet</p><button class="btn-outline" style="font-size:13px;padding:8px 18px;" onclick="showPage(\'burn\')">Burn &amp; merge →</button></div><div class="mynft-grid" id="mynft-grid"></div>';
   const grid=document.getElementById('mynft-grid');
-  const acc=["#E63946","#2A9D8F","#C8B6FF","#F4A261"];
   myNFTData.forEach((item,i)=>{
-    const card=document.createElement('div');card.className='mynft-card';card.style.borderTop='3px solid '+acc[i%acc.length];
-    // Use on-chain SVG img for real NFTs (shows animation!)
-    const img=makeOnchainImg(item.id, 180);
+    const card=document.createElement('div');card.className='mynft-card';
+    // Use canvas with steel blue background (matches on-chain renderer)
+    const cv=makeThumb(item.sticks,200,item.blocks||[]);
+    cv.style.cssText='display:block;width:100%;image-rendering:pixelated;';
     const footer=document.createElement('div');footer.className='mynft-footer';
-    const creditBadge=item.credits>0?'<span style="font-size:10px;color:var(--c4);">'+item.credits+' edit'+(item.credits>1?'s':'')+'</span>':'';
-    const stage=getStage(item.sticks.length);
-    footer.innerHTML='<div class="mynft-info"><h4>'+(item.name||'Untitled')+' #'+item.id+'</h4><span>'+stage+' · '+item.sticks.length+' sticks '+creditBadge+'</span></div><button class="edit-btn" onclick="openEditor('+item.id+')">edit</button>';
-    card.appendChild(img);card.appendChild(footer);grid.appendChild(card);
+    const creditBadge=item.credits>0?'<span style="font-size:10px;color:var(--accent);">'+item.credits+' edit'+(item.credits>1?'s':'')+'</span>':'';
+    const stage=getStage((item.sticks.length||0)+(item.blocks||[]).length);
+    footer.innerHTML='<div class="mynft-info"><h4>'+(item.name&&item.name!=='Untitled'?item.name:'Pixl')+' #'+item.id+'</h4><span>'+stage+' '+creditBadge+'</span></div><button class="edit-btn" onclick="openEditor('+item.id+')">edit</button>';
+    card.appendChild(cv);card.appendChild(footer);grid.appendChild(card);
   });
 }
 
 // ---- Burn & merge selection flow ----
 let burnKeepId=null, burnBurnId=null;
-function buildBurn(){
+async function buildBurn(){
   const wrap=document.getElementById('burn-content');
   if(!walletAddress){wrap.innerHTML='<div class="connect-prompt"><h2>Connect to burn.</h2><p>Connect your wallet to choose which Pixl to keep and which to burn.</p><button class="btn-primary" onclick="handleWalletClick()">Connect wallet</button></div>';return;}
+  // Load NFTs if not yet loaded
+  if(myNFTData.length===0){
+    wrap.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3);font-size:13px;">Loading your Pixl…</div>';
+    await loadMyNFTs();
+  }
   if(myNFTData.length<2){wrap.innerHTML='<div class="connect-prompt"><h2>You need at least two Pixl.</h2><p>Burning merges one Pixl into another, so you need two or more. Mint a few first.</p><button class="btn-primary" onclick="showPage(\'mint\')">Mint a Pixl</button></div>';return;}
   wrap.innerHTML=
     '<div class="burn-select-grid">'+
@@ -1639,7 +1643,9 @@ function makeBurnPick(item,role){
   if(disabled)div.classList.add('disabled');
   const c=makeThumb(item.sticks,140,item.blocks||[]);c.style.cssText='width:100%;image-rendering:pixelated;display:block;';
   div.appendChild(c);
-  const lbl=document.createElement('div');lbl.className='pick-label';lbl.textContent='#'+item.id+' · '+item.sticks.length+' sticks';
+  const lbl=document.createElement('div');lbl.className='pick-label';
+  const total=(item.sticks.length)+(item.blocks||[]).length;
+  lbl.textContent='#'+item.id+' · '+total+' elements';
   div.appendChild(lbl);
   if(isKeep||isBurn){const tag=document.createElement('div');tag.className='pick-tag';tag.textContent=isKeep?'KEEP':'BURN';div.appendChild(tag);}
   if(!disabled){
@@ -1658,10 +1664,18 @@ function renderBurnConfirm(){
   if(burnKeepId===null||burnBurnId===null){area.innerHTML='';return;}
   const keep=myNFTData.find(x=>x.id===burnKeepId);
   const burn=myNFTData.find(x=>x.id===burnBurnId);
-  const merged=keep.sticks.concat(burn.sticks);
-  area.innerHTML='<div class="burn-confirm"><canvas class="burn-preview-canvas" id="burn-preview" width="150" height="150"></canvas><div class="burn-confirm-text"><h4>Pixl #'+keep.id+' will hold '+merged.length+' sticks</h4><p>Burning #'+burn.id+' moves its '+burn.sticks.length+' sticks into #'+keep.id+' and unlocks one edit. #'+burn.id+' is destroyed permanently.</p><button class="burn-go" onclick="confirmBurn()">Burn #'+burn.id+' → keep #'+keep.id+'</button></div></div>';
+  const mergedSticks=keep.sticks.concat(burn.sticks);
+  const mergedBlocks=(keep.blocks||[]).concat(burn.blocks||[]);
+  const keepTotal=(keep.sticks.length)+(keep.blocks||[]).length;
+  const burnTotal=(burn.sticks.length)+(burn.blocks||[]).length;
+  const newTotal=keepTotal+burnTotal;
+  area.innerHTML='<div class="burn-confirm"><canvas class="burn-preview-canvas" id="burn-preview" width="150" height="150"></canvas><div class="burn-confirm-text">'
+    +'<h4>Pixl #'+keep.id+' will hold '+newTotal+' elements</h4>'
+    +'<p>Burning #'+burn.id+' moves its '+burnTotal+' elements into #'+keep.id+' and unlocks one edit. #'+burn.id+' is destroyed permanently.</p>'
+    +'<button class="burn-go" onclick="confirmBurn()">Burn #'+burn.id+' → keep #'+keep.id+'</button>'
+    +'</div></div>';
   const cv=document.getElementById('burn-preview');
-  drawNFT(cv.getContext('2d'),merged,150/GRID);
+  drawNFT(cv.getContext('2d'),mergedSticks,150/GRID,mergedBlocks);
 }
 
 async function confirmBurn(){
