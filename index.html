@@ -23,20 +23,20 @@ body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; backg
 .wrap { max-width:var(--max); margin:0 auto; padding:0 20px; }
 
 /* NAV */
-nav { border-bottom:0.5px solid var(--border2); background:rgba(26,26,26,0.97); position:sticky; top:0; z-index:100; backdrop-filter:blur(8px); }
+nav { border-bottom:0.5px solid rgba(255,255,255,0.1); background:#6B8FA0; position:sticky; top:0; z-index:100; }
 .nav-inner { max-width:var(--max); margin:0 auto; padding:0 24px; height:52px; display:flex; align-items:center; justify-content:space-between; }
-.nav-logo { font-size:18px; font-weight:900; letter-spacing:-1px; cursor:pointer; color:var(--accent); }
-.logo-s,.logo-t,.logo-i,.logo-x,.logo-dot { color:var(--accent); }
+.nav-logo { font-size:18px; font-weight:900; letter-spacing:-1px; cursor:pointer; color:#fff; }
+.logo-s,.logo-t,.logo-i,.logo-x,.logo-dot { color:#fff; }
 .nav-links { display:flex; gap:24px; align-items:center; }
-.nav-links a { font-size:12px; color:var(--text3); text-decoration:none; cursor:pointer; transition:color 0.15s; letter-spacing:0.3px; }
-.nav-links a:hover { color:var(--text); }
-.nav-menu-btn { display:none; background:none; border:none; cursor:pointer; font-size:20px; color:var(--text2); }
-.btn-wallet { font-size:12px; font-weight:600; padding:6px 14px; border:0.5px solid var(--border3); border-radius:4px; background:transparent; color:var(--text2); cursor:pointer; transition:all 0.15s; display:flex; align-items:center; gap:6px; }
-.btn-wallet:hover { color:var(--text); border-color:var(--text3); }
-.btn-wallet.connected { border-color:var(--accent); color:var(--accent); }
+.nav-links a { font-size:12px; color:rgba(255,255,255,0.65); text-decoration:none; cursor:pointer; transition:color 0.15s; letter-spacing:0.3px; }
+.nav-links a:hover { color:#fff; }
+.nav-menu-btn { display:none; background:none; border:none; cursor:pointer; font-size:20px; color:#fff; }
+.btn-wallet { font-size:12px; font-weight:600; padding:6px 14px; border:1px solid rgba(255,255,255,0.3); border-radius:4px; background:rgba(255,255,255,0.12); color:#fff; cursor:pointer; transition:all 0.15s; display:flex; align-items:center; gap:6px; }
+.btn-wallet:hover { background:rgba(255,255,255,0.22); }
+.btn-wallet.connected { border-color:rgba(255,255,255,0.6); }
 .wallet-dot { width:6px; height:6px; border-radius:50%; background:currentColor; }
-.mobile-nav { display:none; background:var(--bg2); border-bottom:0.5px solid var(--border2); padding:10px 24px; flex-direction:column; }
-.mobile-nav a { font-size:14px; color:var(--text2); padding:10px 0; cursor:pointer; border-bottom:0.5px solid var(--border); }
+.mobile-nav { display:none; background:#5A7A90; border-bottom:none; padding:10px 24px; flex-direction:column; }
+.mobile-nav a { font-size:14px; color:rgba(255,255,255,0.7); padding:10px 0; cursor:pointer; border-bottom:0.5px solid rgba(255,255,255,0.15); }
 .mobile-nav.open { display:flex; }
 
 /* HERO */
@@ -1191,18 +1191,20 @@ function resetMint(){
   if(cv){
     const ctx=cv.getContext('2d');
     const sc=cv.width/GRID;
-    ctx.fillStyle='#f5f5f5';ctx.fillRect(0,0,cv.width,cv.height);
-    makeNFT(9).forEach(s=>{
+    // Steel blue background like on-chain NFT
+    ctx.fillStyle='#6B8FA0';ctx.fillRect(0,0,cv.width,cv.height);
+    // Faded preview elements
+    makeNFT(6).forEach(s=>{
       const h=Math.floor(s.length/2);
       for(let i=-h;i<=h;i++){
         let x=s.x,y=s.y;
-        if(s.dir===0)x+=i;else if(s.dir===1)y+=i;else if(s.dir===2){x+=i;y+=i;}else{x+=i;y-=i;}
-        pp(ctx,x,y,'#ddd',sc);
+        if(s.dir===0)x+=i;else y+=i;
+        pp(ctx,x,y,'rgba(255,255,255,0.15)',sc);
       }
     });
-    ctx.fillStyle='rgba(245,245,245,0.6)';ctx.fillRect(0,0,cv.width,cv.height);
-    ctx.fillStyle='#bbb';
-    ctx.font='bold '+Math.round(cv.width*0.25)+'px sans-serif';
+    ctx.fillStyle='rgba(107,143,160,0.4)';ctx.fillRect(0,0,cv.width,cv.height);
+    ctx.fillStyle='rgba(255,255,255,0.4)';
+    ctx.font='bold '+Math.round(cv.width*0.2)+'px sans-serif';
     ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.fillText('?',cv.width/2,cv.height/2);
   }
@@ -1211,13 +1213,14 @@ function resetMint(){
 async function handleMint(){
   if(!walletAddress){toast('Connect your wallet first');return;}
   const cta=document.getElementById('mint-cta');
+  if(cta.disabled)return; // prevent double-click
   cta.disabled=true; cta.textContent='Confirm in wallet…';
   const spinner=document.getElementById('mint-spinner');
   const stext=document.getElementById('mint-spinner-text');
+  spinner.classList.add('active');
   try {
     const contract=getContract(true);
     stext.textContent='Confirm in wallet…';
-    spinner.classList.add('active');
     const tx=await contract.requestMint({value:mintPriceWei});
     stext.textContent='Transaction sent… '+tx.hash.slice(0,10)+'…';
 
@@ -1815,23 +1818,56 @@ let galleryData=[];
 function buildGallery(){
   if(galleryData.length===0){
     let id=1;
-    ARTWORKS.forEach(a=>{ galleryData.push({id:id++, sticks:a.sticks, name:a.name, art:true}); });
-    for(let i=0;i<22;i++) galleryData.push({id:id++, sticks:makeNFT(rand(1,4)*3), art:false});
+    // Curated masterpieces
+    const curated=[
+      {draw:drawMohawk,  name:'Mohawk Punk',  stage:'Masterpiece'},
+      {draw:drawBeanie,  name:'Beanie OG',    stage:'Masterpiece'},
+      {draw:drawNPCFace, name:'NPC Face',     stage:'Masterpiece'},
+      {draw:drawShades,  name:'Shades Punk',  stage:'Masterpiece'},
+      {draw:drawHouse,   name:'Pixel House',  stage:'Masterpiece'},
+      {draw:drawBlonde,  name:'Blonde Punk',  stage:'Masterpiece'},
+    ];
+    curated.forEach(c=>galleryData.push({id:id++, masterDraw:c.draw, name:c.name, stage:c.stage, art:true}));
+    // Random generated at various stages
+    const stages=[
+      {min:3,max:4,s:'Line',count:4},
+      {min:5,max:7,s:'Sketch',count:5},
+      {min:8,max:12,s:'Study',count:5},
+      {min:13,max:19,s:'Painting',count:4},
+    ];
+    stages.forEach(({min,max,s,count})=>{
+      for(let i=0;i<count;i++){
+        const seed=rand(1,9999);
+        const n=rand(min,max);
+        galleryData.push({id:id++, seed, count:n, stage:s, art:false});
+      }
+    });
   }
-  renderGallery(currentFilter==='art'?galleryData.filter(d=>d.art):galleryData);
+  renderGallery(currentFilter==='art'
+    ? galleryData.filter(d=>d.art)
+    : galleryData
+  );
 }
+
 function renderGallery(data){
   const grid=document.getElementById('gallery-grid');grid.innerHTML='';
   data.forEach(item=>{
     const card=document.createElement('div');card.className='nft-card';
-    const c=makeThumb(item.sticks,200);c.style.cssText='width:100%;image-rendering:pixelated;display:block;';
-    const info=document.createElement('div');info.className='nft-card-info';
-    if(item.art){
-      info.innerHTML='<div class="nft-card-id">#'+String(item.id).padStart(4,'0')+'</div><div class="nft-card-name">'+item.name+' · '+item.sticks.length+' sticks</div>';
-    }else{
-      info.innerHTML='<div class="nft-card-id">#'+String(item.id).padStart(4,'0')+'</div>';
+    let cv;
+    if(item.masterDraw){
+      cv=item.masterDraw();
+    } else {
+      cv=document.createElement('canvas');
+      cv.width=GRID*8;cv.height=GRID*8;
+      drawNFT(cv.getContext('2d'),makeNFT(item.count,[item.seed]),8,[]);
     }
-    card.appendChild(c);card.appendChild(info);grid.appendChild(card);
+    cv.style.cssText='display:block;width:100%;image-rendering:pixelated;';
+    const info=document.createElement('div');info.className='nft-footer';
+    const stageCol={Line:'#444',Sketch:'#6B6B6B',Study:'#6B8FA0',Painting:'#D4B87A',Masterpiece:'#C4B5D0'};
+    info.innerHTML='<span class="nft-footer-id">#'+String(item.id).padStart(4,'0')+'</span>'
+      +'<span style="font-size:10px;color:'+stageCol[item.stage]+';font-weight:600;letter-spacing:0.5px;text-transform:uppercase;">'+item.stage+'</span>';
+    card.appendChild(cv);card.appendChild(info);
+    grid.appendChild(card);
   });
 }
 let currentFilter='all';
