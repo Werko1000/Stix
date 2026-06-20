@@ -441,33 +441,32 @@ footer { border-top: 0.5px solid #eee; }
 <script>
 const PALETTE=["#E63946","#F4A261","#E9C46A","#2A9D8F","#264653","#A8DADC","#457B9D","#1D3557","#F1FAEE","#C8B6FF","#FF6B6B","#FFE66D","#6BCB77","#4D96FF","#FF6FC8","#111111"];
 const DIR_NAMES=["--","|","↘","↗"];
-const GRID=50;
+const GRID=24;
 
 // ── Contract config ──────────────────────────────────────────────────────────
-const CONTRACT_ADDRESS = "0x899BCDbF7B28e33f53A12D226775423972b2e544";
+const CONTRACT_ADDRESS = "0x63Bd94a3F66fcb2D8e8801d661C3b2167e4b1245";
 const CHAIN_ID_HEX = "0x14a34"; // Base Sepolia = 84532
 const RPC_URL = "https://base-sepolia.g.alchemy.com/v2/9t2l29UXveRJxvspv3swk";
 
 const ABI = [
   "function requestMint() payable returns (uint256)",
   "function mergeBurn(uint256 keepId, uint256 burnId)",
-  "function saveLayout(uint256 tokenId, tuple(uint8 color, uint8 length, uint8 x, uint8 y, uint8 dir)[] newSticks)",
+  "function saveLayout(uint256 tokenId, tuple(uint8 color, uint8 length, uint8 x, uint8 y, uint8 dir)[] newSticks, tuple(uint8 color, uint8 blockType, uint8 rotation, uint8 x, uint8 y)[] newBlocks)",
   "function setTokenName(uint256 tokenId, string name)",
   "function getSticks(uint256 tokenId) view returns (tuple(uint8 color, uint8 length, uint8 x, uint8 y, uint8 dir)[])",
-  "function stickCount(uint256 tokenId) view returns (uint256)",
+  "function getBlocks(uint256 tokenId) view returns (tuple(uint8 color, uint8 blockType, uint8 rotation, uint8 x, uint8 y)[])",
+  "function elementCount(uint256 tokenId) view returns (uint256 sticks, uint256 blocks)",
   "function editCredits(uint256 tokenId) view returns (uint8)",
   "function tokenName(uint256 tokenId) view returns (string)",
   "function tokenURI(uint256 tokenId) view returns (string)",
   "function tokensOfOwner(address owner) view returns (uint256[])",
-  "function tokenOfOwnerByIndex(address owner, uint256 index) view returns (uint256)",
   "function balanceOf(address owner) view returns (uint256)",
   "function mintOpen() view returns (bool)",
   "function price() view returns (uint256)",
   "function ownerOf(uint256 tokenId) view returns (address)",
-  "event Minted(address indexed minter, uint256 indexed tokenId, uint8 stickCount)",
+  "event Minted(address indexed minter, uint256 indexed tokenId, uint8 sticks, uint8 blocks)",
   "event Merged(uint256 indexed keepId, uint256 indexed burnedId, uint8 newCredits)",
-  "event LayoutSaved(uint256 indexed tokenId, uint8 remainingCredits)",
-  "event NameSet(uint256 indexed tokenId, string name)"
+  "event LayoutSaved(uint256 indexed tokenId, uint8 remainingCredits)"
 ];
 
 function getProvider() {
@@ -497,7 +496,23 @@ function formatStick(s) {
     dir:    Number(s[4])
   };
 }
-
+function formatBlock(b) {
+  return {
+    color:     PALETTE[Number(b[0])] || PALETTE[0],
+    blockType: Number(b[1]),
+    rotation:  Number(b[2]),
+    x:         Number(b[3]),
+    y:         Number(b[4])
+  };
+}
+function toChainStick(s) {
+  const colorIdx = PALETTE.indexOf(s.color);
+  return { color: colorIdx>=0?colorIdx:0, length: Number(s.length), x: Number(s.x), y: Number(s.y), dir: Number(s.dir) };
+}
+function toChainBlock(b) {
+  const colorIdx = PALETTE.indexOf(b.color);
+  return { color: colorIdx>=0?colorIdx:0, blockType: Number(b.blockType), rotation: Number(b.rotation), x: Number(b.x), y: Number(b.y) };
+}
 // Fetch on-chain SVG image from tokenURI
 async function fetchTokenImage(tokenId){
   try{
@@ -536,21 +551,43 @@ function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
 function makeStick(){return{color:PALETTE[rand(0,15)],length:rand(5,15),x:rand(8,42),y:rand(8,42),dir:rand(0,3)};}
 function makeNFT(n){return Array.from({length:n||3},makeStick);}
 function pp(ctx,x,y,c,sc){if(x<0||x>=GRID||y<0||y>=GRID)return;ctx.fillStyle=c;ctx.fillRect(x*sc,y*sc,sc,sc);}
-function drawNFT(ctx,sticks,scale){
+// Tetromino pixel offsets per type and rotation
+const TETROS=[
+  [[[0,0],[1,0],[2,0],[3,0]],[[0,0],[0,1],[0,2],[0,3]]],                                                        // I
+  [[[0,0],[1,0],[0,1],[1,1]]],                                                                                   // O
+  [[[0,0],[1,0],[2,0],[1,1]],[[0,0],[0,1],[1,1],[0,2]],[[1,0],[0,1],[1,1],[2,1]],[[1,0],[0,1],[1,1],[1,2]]],   // T
+  [[[1,0],[2,0],[0,1],[1,1]],[[0,0],[0,1],[1,1],[1,2]]],                                                        // S
+  [[[0,0],[1,0],[1,1],[2,1]],[[1,0],[0,1],[1,1],[0,2]]],                                                        // Z
+  [[[0,0],[0,1],[0,2],[1,2]],[[0,0],[1,0],[2,0],[0,1]],[[0,0],[1,0],[1,1],[1,2]],[[2,0],[0,1],[1,1],[2,1]]],   // L
+  [[[1,0],[1,1],[0,2],[1,2]],[[0,0],[0,1],[1,1],[2,1]],[[0,0],[1,0],[0,1],[0,2]],[[0,0],[1,0],[2,0],[2,1]]],   // J
+];
+
+function getTetroPixels(blockType,rotation,ox,oy){
+  const shapes=TETROS[blockType]||TETROS[0];
+  const shape=shapes[rotation%shapes.length];
+  return shape.map(([dx,dy])=>[ox+dx,oy+dy]);
+}
+
+function drawNFT(ctx,sticks,scale,blocks){
   ctx.fillStyle='#fff';ctx.fillRect(0,0,GRID*scale,GRID*scale);
+  // Draw sticks (H/V only)
   sticks.forEach(s=>{
     const h=Math.floor(Number(s.length)/2);
     const sx=Number(s.x),sy=Number(s.y),sd=Number(s.dir);
     const col=typeof s.color==='string'?s.color:(PALETTE[Number(s.color)]||'#111');
     for(let i=-h;i<=h;i++){
       if(sd===0)pp(ctx,sx+i,sy,col,scale);
-      else if(sd===1)pp(ctx,sx,sy+i,col,scale);
-      else if(sd===2)pp(ctx,sx+i,sy+i,col,scale);
-      else pp(ctx,sx+i,sy-i,col,scale);
+      else pp(ctx,sx,sy+i,col,scale);
     }
   });
+  // Draw tetromino blocks
+  (blocks||[]).forEach(b=>{
+    const col=typeof b.color==='string'?b.color:(PALETTE[Number(b.color)]||'#111');
+    getTetroPixels(Number(b.blockType),Number(b.rotation),Number(b.x),Number(b.y))
+      .forEach(([x,y])=>pp(ctx,x,y,col,scale));
+  });
 }
-function makeThumb(sticks,size){const c=document.createElement('canvas');c.width=size;c.height=size;drawNFT(c.getContext('2d'),sticks,size/GRID);return c;}
+function makeThumb(sticks,size,blocks){const c=document.createElement('canvas');c.width=size;c.height=size;drawNFT(c.getContext('2d'),sticks,size/GRID,blocks||[]);return c;}
 function toggleMobileNav(){document.getElementById('mobile-nav').classList.toggle('open');}
 function showPage(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -810,7 +847,8 @@ async function handleSave(){
   try {
     const contract=getContract(true);
     const chainSticks=editorSticks.map(toChainStick);
-    const tx=await contract.saveLayout(editorTokenId,chainSticks);
+    const chainBlocks=(editorBlocks||[]).map(toChainBlock);
+    const tx=await contract.saveLayout(editorTokenId,chainSticks,chainBlocks);
     btn.textContent='Saving on-chain…';
     await tx.wait(1);
     // Reload credits from chain (source of truth)
@@ -930,12 +968,14 @@ async function loadMyNFTs(){
     for(const tokenId of ids){
       try{
         const rawSticks=await contract.getSticks(tokenId.toNumber());
+        const rawBlocks=await contract.getBlocks(tokenId.toNumber());
         const credits=await contract.editCredits(tokenId.toNumber());
         const name=await contract.tokenName(tokenId.toNumber());
-        console.log('Token',tokenId.toNumber(),'→',rawSticks.length,'sticks, credits:',Number(credits));
+        console.log('Token',tokenId.toNumber(),'→',rawSticks.length,'sticks,',rawBlocks.length,'blocks, credits:',Number(credits));
         owned.push({
           id:      tokenId.toNumber(),
           sticks:  rawSticks.map(formatStick),
+          blocks:  rawBlocks.map(formatBlock),
           credits: Number(credits),
           name:    name||'Untitled'
         });
@@ -1083,7 +1123,7 @@ async function confirmBurn(){
     else toast('Burn failed: '+(e.reason||e.message||'unknown error'));
   }
 }
-let editorSticks=makeNFT(3);let selectedIdx=0;
+let editorSticks=makeNFT(3);let editorBlocks=[];let selectedIdx=0;
 const EDITOR_SCALE=6;
 let editorCanvasReady=false;
 let editCredits=0;
@@ -1094,15 +1134,15 @@ function openEditor(id){
   const nft=myNFTData.find(x=>x.id===id);
   if(!nft){ toast('NFT not found – open My NFTs first'); return; }
   editorTokenId=id;
-  // Force all values to plain Numbers (guard against BigNumber from chain)
   editorSticks=nft.sticks.map(s=>({
     color:  typeof s.color==='string' ? s.color : (PALETTE[Number(s.color)]||PALETTE[0]),
-    length: Number(s.length),
-    x:      Number(s.x),
-    y:      Number(s.y),
-    dir:    Number(s.dir)
+    length: Number(s.length), x: Number(s.x), y: Number(s.y), dir: Number(s.dir)
   }));
-  console.log('Editor sticks:', editorSticks.map(s=>({len:s.length,x:s.x,y:s.y,dir:s.dir})));
+  editorBlocks=(nft.blocks||[]).map(b=>({
+    color:     typeof b.color==='string' ? b.color : (PALETTE[Number(b.color)]||PALETTE[0]),
+    blockType: Number(b.blockType), rotation: Number(b.rotation),
+    x: Number(b.x), y: Number(b.y)
+  }));
   editCredits=nft.credits||0;
   selectedIdx=0;
   layoutDirty=false;
@@ -1142,7 +1182,7 @@ function drawEditorCanvas(){
   const cv=document.getElementById('editor-canvas');
   if(!cv)return;
   const ctx=cv.getContext('2d');
-  drawNFT(ctx,editorSticks,EDITOR_SCALE);
+  drawNFT(ctx,editorSticks,EDITOR_SCALE,editorBlocks);
   const s=editorSticks[selectedIdx];
   if(s){
     ctx.strokeStyle='rgba(0,0,0,0.5)';
